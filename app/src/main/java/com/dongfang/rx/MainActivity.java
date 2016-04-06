@@ -1,4 +1,4 @@
-package com.dongfang.rxjavaandroidtest;
+package com.dongfang.rx;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;

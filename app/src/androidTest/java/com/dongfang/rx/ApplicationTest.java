@@ -1,4 +1,4 @@
-package com.dongfang.rxjavaandroidtest;
+package com.dongfang.rx;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
