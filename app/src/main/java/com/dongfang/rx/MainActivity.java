@@ -6,8 +6,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.dongfang.rx.socket.SocekBus;
 import com.dongfang.rx.socket.SocketBus;
+
+import java.util.concurrent.TimeUnit;
+
+import rx.Observable;
+import rx.functions.Action1;
+import rx.functions.Func1;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,5 +49,26 @@ public class MainActivity extends AppCompatActivity {
                 mSocketBus.stop();
             }
         });
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        Observable.just(1)
+                .flatMap(new Func1<Integer, Observable<Long>>() {
+                    @Override
+                    public Observable<Long> call(Integer integer) {
+                        return Observable.interval(1, TimeUnit.SECONDS);
+                    }
+                })
+                .subscribe(new Action1<Long>() {
+                    @Override
+                    public void call(Long aLong) {
+                        System.out.println("--- " + aLong);
+                    }
+                });
+
     }
 }
