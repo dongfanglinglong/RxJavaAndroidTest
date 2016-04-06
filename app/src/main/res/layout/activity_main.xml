@@ -13,6 +13,7 @@
 
 
     <TextView
+        android:id="@+id/textview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Hello World!"
@@ -23,6 +24,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="START SERVICE"/>
+    <Button
+        android:id="@+id/button_stop"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="STOP SERVICE"/>
 
     <Button
         android:id="@+id/button_subscribe"
