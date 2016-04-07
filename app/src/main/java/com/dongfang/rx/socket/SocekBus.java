@@ -29,7 +29,7 @@ public class SocekBus {
     private Subscription mSubscription;
 
 
-    private SocketMegBean mSocketMegBean, mBeanRec;
+    private SocketMsgBean mSocketMegBean, mBeanRec;
     private int id = 0;
     private boolean close = false;
     private static final String UI_ID = "769U";
@@ -39,7 +39,7 @@ public class SocekBus {
     }
 
     private void init() {
-        mSocketMegBean = new SocketMegBean();
+        mSocketMegBean = new SocketMsgBean();
         mSocketMegBean.id = UI_ID;
         mSocketMegBean.msg = "OK";
         mSocketMegBean.data = "{\"a\":10}";
@@ -137,7 +137,7 @@ public class SocekBus {
                                                         echo = null == echo || "".equals(echo) ? "null" : echo;
                                                         ULog.d("s2c:" + echo);
                                                         if (!echo.equals("null")) {
-                                                            mBeanRec = new Gson().fromJson(echo, SocketMegBean.class);
+                                                            mBeanRec = new Gson().fromJson(echo, SocketMsgBean.class);
                                                             ULog.d("rec = " + mBeanRec.toString());
                                                             //  HttpHeaderIds.addId(mBeanRec.id);
                                                             out.println("null");

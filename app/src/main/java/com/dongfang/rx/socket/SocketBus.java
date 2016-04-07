@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
-import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
@@ -14,14 +13,13 @@ import rx.functions.Func1;
 /**
  * Created by dongfang on 16/4/6.
  */
-public class SocketBus {
-
+public final class SocketBus {
     public static final String TAG = "SocketBus";
     private static final String UI_ID = "769U";
-    private SocketMegBean mSocketMegBean, mHttpMegBean;
+    private SocketMsgBean mSocketMegBean, mHttpMegBean;
 
 
-    private Observable<SocketMegBean> mObservableHttp, mObservableSocket, mObservableGrable;
+    private Observable<SocketMsgBean> mObservableHttp, mObservableSocket, mObservableGrable;
 
 
     private Subscription mSubscription;
@@ -35,16 +33,16 @@ public class SocketBus {
     }
 
     private void init() {
-        mSocketMegBean = new SocketMegBean();
-        mSocketMegBean.id = UI_ID;
-        mSocketMegBean.mstType = SocketMegBean.MSG_TYPE_SOCKET;
-        mSocketMegBean.msg = "OK";
-        mSocketMegBean.data = "{\"a\":10}";
-        mSocketMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
+//        mSocketMegBean = new SocketMsgBean();
+//        mSocketMegBean.id = UI_ID;
+//        mSocketMegBean.mstType = SocketMsgBean.MSG_TYPE_SOCKET;
+//        mSocketMegBean.msg = "OK";
+//        mSocketMegBean.data = "{\"a\":10}";
+//        mSocketMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
 
-        mHttpMegBean = new SocketMegBean();
+        mHttpMegBean = new SocketMsgBean();
         mHttpMegBean.id = UI_ID;
-        mHttpMegBean.mstType = SocketMegBean.MSG_TYPE_HTTP;
+        mHttpMegBean.mstType = SocketMsgBean.MSG_TYPE_HTTP;
         mHttpMegBean.msg = "OK";
         mHttpMegBean.data = "{\"a\":10}";
         mHttpMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
@@ -61,47 +59,53 @@ public class SocketBus {
                         return System.currentTimeMillis() % 10;
                     }
                 })
-                .flatMap(new Func1<Long, Observable<SocketMegBean>>() {
+                .flatMap(new Func1<Long, Observable<SocketMsgBean>>() {
                     @Override
-                    public Observable<SocketMegBean> call(Long aLong) {
+                    public Observable<SocketMsgBean> call(Long aLong) {
                         mHttpMegBean.id = UI_ID + aLong;
                         return Observable.just(mHttpMegBean);
                     }
                 })
         ;
 
-        mObservableSocket = Observable
-                .interval(5, TimeUnit.SECONDS)
-                .map(new Func1<Long, Long>() {
-                    @Override
-                    public Long call(Long aLong) {
-                        return System.currentTimeMillis() % 10;
-                    }
-                })
-                .flatMap(new Func1<Long, Observable<SocketMegBean>>() {
-                    @Override
-                    public Observable<SocketMegBean> call(Long aLong) {
-                        mSocketMegBean.id = UI_ID + aLong;
-                        return Observable.just(mSocketMegBean);
-                    }
-                })
-        ;
+//        mObservableSocket = Observable
+//                .interval(5, TimeUnit.SECONDS)
+//                .map(new Func1<Long, Long>() {
+//                    @Override
+//                    public Long call(Long aLong) {
+//                        return System.currentTimeMillis() % 10;
+//                    }
+//                })
+//                .flatMap(new Func1<Long, Observable<SocketMsgBean>>() {
+//                    @Override
+//                    public Observable<SocketMsgBean> call(Long aLong) {
+//                        mSocketMegBean.id = UI_ID + aLong;
+//                        return Observable.just(mSocketMegBean);
+//                    }
+//                })
+//        ;
+
+        try {
+            mObservableSocket = new SocketBus2Con("10.128.7.25", 20011).getObservableSocket();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
 
 
     }
 
-
     public void start() {
 
-        if (mSubscription.isUnsubscribed())
+        if (null != mSubscription && mSubscription.isUnsubscribed())
             return;
 
 
         mObservableGrable = Observable.merge(mObservableHttp, mObservableSocket)
-                .filter(new Func1<SocketMegBean, Boolean>() {
+                .filter(new Func1<SocketMsgBean, Boolean>() {
                     @Override
-                    public Boolean call(SocketMegBean socketMegBean) {
-                        ULog.i(socketMegBean.toString());
+                    public Boolean call(SocketMsgBean socketMegBean) {
+                        if (socketMegBean.mstType != SocketMsgBean.MSG_TYPE_HTTP)
+                            ULog.i(socketMegBean.toString());
                         if (mHashMap.containsKey(socketMegBean.id)) {
                             ULog.i("containsKey [" + socketMegBean.id + "]");
                             return false;
@@ -111,17 +115,34 @@ public class SocketBus {
                     }
                 })
                 .share();
-        mSubscription = mObservableGrable.subscribe(new Action1<SocketMegBean>() {
-            @Override
-            public void call(SocketMegBean socketMegBean) {
-                ULog.d(socketMegBean.toString());
-            }
-        });
+        mSubscription = mObservableGrable.subscribe(
+                new Action1<SocketMsgBean>() {
+                    @Override
+                    public void call(SocketMsgBean socketMegBean) {
+                        if (socketMegBean.mstType != SocketMsgBean.MSG_TYPE_HTTP)
+                            ULog.d(socketMegBean.toString());
+                    }
+                },
+                new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        ULog.e(throwable.toString());
+                    }
+                });
     }
 
     public void stop() {
         mSubscription.unsubscribe();
         mHashMap.clear();
     }
+
+
+    /**
+     * 获取推送消息的Observable
+     */
+    public Observable<SocketMsgBean> getObservable4Msg() {
+        return mObservableGrable;
+    }
+
 
 }

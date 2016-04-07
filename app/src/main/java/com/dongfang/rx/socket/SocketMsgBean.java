@@ -8,7 +8,7 @@ import java.util.Arrays;
 /**
  * Created by dongfang on 2016/3/31.
  */
-public class SocketMegBean implements Parcelable {
+public class SocketMsgBean implements Parcelable {
     public static final int MSG_TYPE_HTTP = 0;
     public static final int MSG_TYPE_SOCKET = 1;
 
@@ -34,10 +34,10 @@ public class SocketMegBean implements Parcelable {
         dest.writeInt(this.mstType);
     }
 
-    public SocketMegBean() {
+    public SocketMsgBean() {
     }
 
-    protected SocketMegBean(Parcel in) {
+    protected SocketMsgBean(Parcel in) {
         this.id = in.readString();
         this.msg = in.readString();
         this.data = in.readString();
@@ -45,21 +45,21 @@ public class SocketMegBean implements Parcelable {
         this.mstType = in.readInt();
     }
 
-    public static final Parcelable.Creator<SocketMegBean> CREATOR = new Parcelable.Creator<SocketMegBean>() {
+    public static final Parcelable.Creator<SocketMsgBean> CREATOR = new Parcelable.Creator<SocketMsgBean>() {
         @Override
-        public SocketMegBean createFromParcel(Parcel source) {
-            return new SocketMegBean(source);
+        public SocketMsgBean createFromParcel(Parcel source) {
+            return new SocketMsgBean(source);
         }
 
         @Override
-        public SocketMegBean[] newArray(int size) {
-            return new SocketMegBean[size];
+        public SocketMsgBean[] newArray(int size) {
+            return new SocketMsgBean[size];
         }
     };
 
     @Override
     public String toString() {
-        return "SocketMegBean{" +
+        return "SocketMsgBean{" +
                 "id='" + id + '\'' +
                 ", msgType='" + mstType + '\'' +
                 ", data='" + data + '\'' +
