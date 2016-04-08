@@ -2,6 +2,7 @@ package com.dongfang.rx.socket;
 
 import android.util.Patterns;
 
+import com.dongfang.rx.Bean.HeartMsgBean;
 import com.dongfang.rx.Bean.SocketMsgBean;
 import com.dongfang.rx.BuildConfig;
 import com.dongfang.rx.utils.ULog;
@@ -111,6 +112,22 @@ public final class Socket2Connect {
         if (mObservableSocket != null) {
             return mObservableSocket;
         }
+
+
+        getObservableConnect().flatMap(new Func1<Socket, Observable<HeartMsgBean>>() {
+            @Override
+            public Observable<HeartMsgBean> call(Socket socket) {
+                Socket2Heart heart = Socket2Heart.getInstance();
+
+                heart.getHeartObservable(getObservaleWriter(),getObservableReader());
+
+
+                return
+
+                        ;
+            }
+        });
+
 
         mObservableSocket = getObservableConnect().flatMap(new Func1<Socket, Observable<SocketMsgBean>>() {
             @Override

@@ -9,6 +9,8 @@ import java.util.Arrays;
  * Created by dongfang on 2016/3/31.
  */
 public class SocketMsgBean implements Parcelable {
+
+
     public static final int MSG_TYPE_HTTP = 0;
     public static final int MSG_TYPE_SOCKET = 1;
 

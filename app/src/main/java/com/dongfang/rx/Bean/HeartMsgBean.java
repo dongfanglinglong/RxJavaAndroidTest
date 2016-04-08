@@ -6,30 +6,19 @@ import android.os.Parcelable;
 /**
  * Created by dongfang on 2016/4/7.
  */
-public class HeartMsgBean implements Parcelable {
-    public long id;
-    public String msg;
-    public String data;
+public class HeartMsgBean extends BaseBean implements Parcelable {
 
     @Override
     public int describeContents() { return 0; }
 
     @Override
-    public void writeToParcel(Parcel dest, int flags) {
-        dest.writeLong(this.id);
-        dest.writeString(this.msg);
-        dest.writeString(this.data);
-    }
+    public void writeToParcel(Parcel dest, int flags) {super.writeToParcel(dest, flags);}
 
     public HeartMsgBean() {}
 
-    protected HeartMsgBean(Parcel in) {
-        this.id = in.readLong();
-        this.msg = in.readString();
-        this.data = in.readString();
-    }
+    protected HeartMsgBean(Parcel in) {super(in);}
 
-    public static final Parcelable.Creator<HeartMsgBean> CREATOR = new Parcelable.Creator<HeartMsgBean>() {
+    public static final Creator<HeartMsgBean> CREATOR = new Creator<HeartMsgBean>() {
         @Override
         public HeartMsgBean createFromParcel(Parcel source) {return new HeartMsgBean(source);}
 

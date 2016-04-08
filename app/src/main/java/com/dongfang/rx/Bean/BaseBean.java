@@ -33,18 +33,6 @@ public class BaseBean implements Parcelable {
         this.data = in.readString();
     }
 
-    public static final Creator<BaseBean> CREATOR = new Creator<BaseBean>() {
-        @Override
-        public BaseBean createFromParcel(Parcel source) {
-            return new BaseBean(source);
-        }
-
-        @Override
-        public BaseBean[] newArray(int size) {
-            return new BaseBean[size];
-        }
-    };
-
     @Override
     public String toString() {
         return "BaseBean{" +

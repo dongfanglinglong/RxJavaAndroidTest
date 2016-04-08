@@ -37,6 +37,15 @@ public final class Socket2Heart {
 
     private Subscription mSubscriptionHeart;
 
+    public Observable<HeartMsgBean> getHeartObservable(Observable<PrintStream> obsW, Observable<BufferedReader> obsR) {
+        return creatHeartWriter(obsW).zipWith(creatHeartReader(obsR), new Func2() {
+            @Override
+            public Object call(Object o, Object o2) {
+                return null;
+            }
+        });
+    }
+
 
     public Observable getHeartObservable(Socket2Connect connect) {
         if (connect != null && null != connect.getObservaleWriter() && null != connect.getObservableReader()) {
