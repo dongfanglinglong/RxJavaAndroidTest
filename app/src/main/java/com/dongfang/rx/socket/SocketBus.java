@@ -1,5 +1,6 @@
 package com.dongfang.rx.socket;
 
+import com.dongfang.rx.Bean.SocketMsgBean;
 import com.dongfang.rx.utils.ULog;
 
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import rx.Observable;
 import rx.Subscription;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by dongfang on 16/4/6.
@@ -33,12 +35,12 @@ public final class SocketBus {
     }
 
     private void init() {
-//        mSocketMegBean = new SocketMsgBean();
-//        mSocketMegBean.id = UI_ID;
-//        mSocketMegBean.mstType = SocketMsgBean.MSG_TYPE_SOCKET;
-//        mSocketMegBean.msg = "OK";
-//        mSocketMegBean.data = "{\"a\":10}";
-//        mSocketMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
+        // mSocketMegBean = new SocketMsgBean();
+        // mSocketMegBean.id = UI_ID;
+        // mSocketMegBean.mstType = SocketMsgBean.MSG_TYPE_SOCKET;
+        // mSocketMegBean.msg = "OK";
+        // mSocketMegBean.data = "{\"a\":10}";
+        // mSocketMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
 
         mHttpMegBean = new SocketMsgBean();
         mHttpMegBean.id = UI_ID;
@@ -68,39 +70,44 @@ public final class SocketBus {
                 })
         ;
 
-//        mObservableSocket = Observable
-//                .interval(5, TimeUnit.SECONDS)
-//                .map(new Func1<Long, Long>() {
-//                    @Override
-//                    public Long call(Long aLong) {
-//                        return System.currentTimeMillis() % 10;
-//                    }
-//                })
-//                .flatMap(new Func1<Long, Observable<SocketMsgBean>>() {
-//                    @Override
-//                    public Observable<SocketMsgBean> call(Long aLong) {
-//                        mSocketMegBean.id = UI_ID + aLong;
-//                        return Observable.just(mSocketMegBean);
-//                    }
-//                })
-//        ;
+        // mObservableSocket = Observable
+        //         .interval(5, TimeUnit.SECONDS)
+        //         .map(new Func1<Long, Long>() {
+        //             @Override
+        //             public Long call(Long aLong) {
+        //                 return System.currentTimeMillis() % 10;
+        //             }
+        //         })
+        //         .flatMap(new Func1<Long, Observable<SocketMsgBean>>() {
+        //             @Override
+        //             public Observable<SocketMsgBean> call(Long aLong) {
+        //                 mSocketMegBean.id = UI_ID + aLong;
+        //                 return Observable.just(mSocketMegBean);
+        //             }
+        //         })
+        // ;
 
         try {
-            mObservableSocket = new SocketBus2Con("10.128.7.25", 20011).getObservableSocket();
+            mObservableSocket = Socket2Connect.getInstance("10.128.7.25", 20011).getObservableSocket();
+            mObservableSocket.subscribe();
         } catch (SocketException e) {
             e.printStackTrace();
+            mObservableSocket = null;
         }
 
 
     }
 
     public void start() {
-
-        if (null != mSubscription && mSubscription.isUnsubscribed())
+        if (null != mSubscription && !mSubscription.isUnsubscribed())
             return;
+
+//        if (null != mObservableSocket)
+//            Socket2Connect.getInstance().startConnect();
 
 
         mObservableGrable = Observable.merge(mObservableHttp, mObservableSocket)
+                .subscribeOn(Schedulers.io())
                 .filter(new Func1<SocketMsgBean, Boolean>() {
                     @Override
                     public Boolean call(SocketMsgBean socketMegBean) {

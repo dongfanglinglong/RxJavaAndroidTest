@@ -13,4 +13,7 @@ public class SocketException extends Exception {
     public static final int IP_EXCEPTION = 82;
     public static final int PORT_EXCEPTION = 733;
     public static final int SOCKET_CONNECT_EXCEPTION = 225;
+    public static final int SOCKET_PUTSTREAM_SHOTDOWN = 533;
+
+    public static final int SOCKET_READER_EXCEPTION = 10;
 }

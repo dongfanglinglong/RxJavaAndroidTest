@@ -1,4 +1,4 @@
-package com.dongfang.rx.socket;
+package com.dongfang.rx.Bean;
 
 import android.os.Parcel;
 import android.os.Parcelable;

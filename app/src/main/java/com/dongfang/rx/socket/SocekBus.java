@@ -1,5 +1,6 @@
 package com.dongfang.rx.socket;
 
+import com.dongfang.rx.Bean.SocketMsgBean;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;
 
