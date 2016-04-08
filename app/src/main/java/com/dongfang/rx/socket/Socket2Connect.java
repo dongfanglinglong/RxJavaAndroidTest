@@ -154,7 +154,7 @@ public final class Socket2Connect {
      *
      * @return mObservableWrite2Soc
      */
-    public Observable<PrintStream> getObservaleWrite2Soc() {
+    public Observable<PrintStream> getObservaleWriter() {
         if (mObservableWrite2Soc == null || mPrintStream != null) {
             mObservableWrite2Soc = Observable.just(mPrintStream)
                     .subscribeOn(Schedulers.io())
@@ -284,10 +284,10 @@ public final class Socket2Connect {
 
     /** 获取心跳专用Observable */
     private Observable<SocketMsgBean> getObservableWrite2SocHeart() {
-        if (null == getObservaleWrite2Soc())
+        if (null == getObservaleWriter())
             return null;
 
-        Observable observable = getObservaleWrite2Soc()
+        Observable observable = getObservaleWriter()
                 .map(new Func1<PrintStream, SocketMsgBean>() {
                     @Override
                     public SocketMsgBean call(PrintStream out) {

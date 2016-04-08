@@ -39,18 +39,18 @@ public final class Socket2Heart {
 
 
     public Observable getHeartObservable(Socket2Connect connect) {
-        if (connect != null && null != connect.getObservaleWrite2Soc() && null != connect.getObservableReader()) {
-            Observable.zip(creatHeartWriter(connect.getObservaleWrite2Soc()), creatHeartReader(connect.getObservableReader()), new Func2() {
-                @Override
-                public Object call(Object o, Object o2) {
-                    return null;
-                }
-            })
+        if (connect != null && null != connect.getObservaleWriter() && null != connect.getObservableReader()) {
+            // Observable.zip(creatHeartWriter(connect.getObservaleWriter()), creatHeartReader(connect.getObservableReader()), new Func2() {
+            //     @Override
+            //     public Object call(Object o, Object o2) {
+            //         return null;
+            //     }
+            // });
+            //
+            // creatHeartWriter(connect.getObservaleWriter());
+            // creatHeartReader(connect.getObservableReader());
 
-            creatHeartWriter(connect.getObservaleWrite2Soc());
-            creatHeartReader(connect.getObservableReader());
-
-            mObservableHeart = creatHeartWriter(connect.getObservaleWrite2Soc())
+            mObservableHeart = creatHeartWriter(connect.getObservaleWriter())
                     .zipWith(creatHeartReader(connect.getObservableReader()), new Func2<Object, HeartMsgBean, HeartMsgBean>() {
                         @Override
                         public HeartMsgBean call(Object o, HeartMsgBean msgBean) {
@@ -125,17 +125,18 @@ public final class Socket2Heart {
                                 ULog.d(msgBean.toString());
                         }
                     })
-                    .repeatWhen(new Func1<Observable<? extends Void>, Observable<?>>() {
-                        @Override
-                        public Observable<?> call(Observable<? extends Void> observable) {
-                            return observable.flatMap(new Func1<Void, Observable<?>>() {
-                                @Override
-                                public Observable<?> call(Void aVoid) {
-                                    return null;
-                                }
-                            });
-                        }
-                    })
+                    .repeat()
+//                    .repeatWhen(new Func1<Observable<? extends Void>, Observable<?>>() {
+//                        @Override
+//                        public Observable<?> call(Observable<? extends Void> observable) {
+//                            return observable.flatMap(new Func1<Void, Observable<?>>() {
+//                                @Override
+//                                public Observable<?> call(Void aVoid) {
+//                                    return null;
+//                                }
+//                            });
+//                        }
+//                    })
                     .share();
         }
 
