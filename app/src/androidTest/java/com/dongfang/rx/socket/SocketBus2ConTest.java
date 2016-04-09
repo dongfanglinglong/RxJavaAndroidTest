@@ -11,7 +11,7 @@ public class SocketBus2ConTest {
     @Test
     public void testGetObservableConnect() throws Exception {
 //        Socket2Connect bus2Con = new Socket2Connect("10.128.7.25", 20011);
-//        bus2Con.getObservableConnect();
+//        bus2Con.initObservableConnect();
 
     }
 }

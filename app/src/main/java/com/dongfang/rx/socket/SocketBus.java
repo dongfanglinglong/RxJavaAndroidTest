@@ -1,8 +1,10 @@
 package com.dongfang.rx.socket;
 
+import com.dongfang.rx.Bean.HeartMsgBean;
 import com.dongfang.rx.Bean.SocketMsgBean;
 import com.dongfang.rx.utils.ULog;
 
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -22,6 +24,8 @@ public final class SocketBus {
 
 
     private Observable<SocketMsgBean> mObservableHttp, mObservableSocket, mObservableGrable;
+
+    private Observable<HeartMsgBean> mObservabelHeart;
 
 
     private Subscription mSubscription;
@@ -88,14 +92,46 @@ public final class SocketBus {
         // ;
 
         try {
-            mObservableSocket = Socket2Connect.getInstance("10.128.7.25", 20011).getObservableSocket();
-            mObservableSocket.subscribe();
+            final Socket2Connect socket2Connect = Socket2Connect.getInstance("192.168.5.6", 20011);
+//            Socket2Connect socket2Connect = Socket2Connect.getInstance("10.128.7.25", 20011);
+            socket2Connect.initObservableConnect()
+                    .map(new Func1<Socket, Socket>() {
+                        @Override
+                        public Socket call(Socket socket) {
+                            mObservabelHeart = Socket2Heart.getInstance()
+                                    .getHeartObservable(socket2Connect.getObservaleWriter(), socket2Connect.getObservableReader());
+
+
+                            mObservabelHeart.subscribe(new Action1<HeartMsgBean>() {
+                                                           @Override
+                                                           public void call(HeartMsgBean heartMsgBean) {
+
+                                                           }
+                                                       }, new Action1<Throwable>() {
+                                                           @Override
+                                                           public void call(Throwable throwable) {
+                                                               ULog.e(throwable.toString());
+                                                           }
+                                                       }
+
+
+                            );
+                            return null;
+                        }
+                    });
+
+//            mObservabelHeart = Socket2Heart.getInstance()
+//                    .getHeartObservable(socket2Connect.getObservaleWriter(), socket2Connect.getObservableReader());
+//            mObservabelHeart.subscribe();
+
+            // mObservableSocket = Socket2Connect.getInstance("10.128.7.25", 20011).getObservableSocket();
+            // mObservableSocket.subscribe();
         } catch (SocketException e) {
+            // TODO: 心跳断了之后重连,有可能是一直重连
+
             e.printStackTrace();
-            mObservableSocket = null;
+            // mObservableSocket = null;
         }
-
-
     }
 
     public void start() {
