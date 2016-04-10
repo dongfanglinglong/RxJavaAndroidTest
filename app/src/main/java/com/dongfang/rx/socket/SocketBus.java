@@ -94,28 +94,26 @@ public final class SocketBus {
         try {
             final Socket2Connect socket2Connect = Socket2Connect.getInstance("192.168.5.6", 20011);
 //            Socket2Connect socket2Connect = Socket2Connect.getInstance("10.128.7.25", 20011);
-            socket2Connect.initObservableConnect()
+            socket2Connect.startConnect()
                     .map(new Func1<Socket, Socket>() {
                         @Override
                         public Socket call(Socket socket) {
-                            mObservabelHeart = Socket2Heart.getInstance()
-                                    .getHeartObservable(socket2Connect.getObservaleWriter(), socket2Connect.getObservableReader());
-
-
-                            mObservabelHeart.subscribe(new Action1<HeartMsgBean>() {
-                                                           @Override
-                                                           public void call(HeartMsgBean heartMsgBean) {
-
-                                                           }
-                                                       }, new Action1<Throwable>() {
-                                                           @Override
-                                                           public void call(Throwable throwable) {
-                                                               ULog.e(throwable.toString());
-                                                           }
-                                                       }
-
-
-                            );
+//                            mObservabelHeart = Socket2Heart.getInstance()
+//                                    .getHeartObservable(socket2Connect.getObservaleWriter(), socket2Connect.getObservableReader());
+//
+//
+//                            mObservabelHeart.subscribe(new Action1<HeartMsgBean>() {
+//                                                           @Override
+//                                                           public void call(HeartMsgBean heartMsgBean) {
+//
+//                                                           }
+//                                                       }, new Action1<Throwable>() {
+//                                                           @Override
+//                                                           public void call(Throwable throwable) {
+//                                                               ULog.e(throwable.toString());
+//                                                           }
+//                                                       }
+//                            );
                             return null;
                         }
                     });

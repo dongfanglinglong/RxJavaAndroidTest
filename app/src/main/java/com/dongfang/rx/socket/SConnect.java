@@ -16,7 +16,7 @@ public class SConnect {
 
 
     /** socket建链超时时间 */
-    private final static int TIME_OUT = 15 * 1000;
+    private final static int TIME_OUT = 2 * 1000; // 15*1000
     private volatile Socket mSocket;
 
     private String mIP;
@@ -52,7 +52,7 @@ public class SConnect {
      * @throws SocketException
      */
     public synchronized void connect() throws SocketException {
-        if (mSocket == null || mSocket.isClosed()) {
+        if (mSocket == null || mSocket.isClosed() ) {
             close();
             try {
                 mSocket = new Socket();
