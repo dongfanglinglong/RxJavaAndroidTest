@@ -9,8 +9,6 @@ import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
-import rx.Subscription;
-import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.functions.Func2;
 
@@ -20,6 +18,18 @@ import rx.functions.Func2;
  * Created by dongfang on 2016/4/8.
  */
 public final class Socket2Heart {
+
+
+    /** 心跳时长, 秒 */
+    private static final int HEART_INTERVAL = 5;
+    /** 心跳错误阀值 */
+    private static final int HEART_ERROR_CONFINE = 5;
+    /** 心跳数据出错次数 */
+    private int heartErroCount = 0;
+
+    /** 第几次心跳记录 */
+    private long heartCount = 0;
+
 
     private static Socket2Heart sSocket2Heart;
 
@@ -50,34 +60,41 @@ public final class Socket2Heart {
     }
 
     private Observable<Long> mObservableWriter;
-    /** 第几次心跳记录 */
-    private long heartCount = 0;
+
 
     private synchronized Observable<Long> creatHeartWriter(Observable<PrintStream> observable) {
-        if (mObservableWriter == null && observable != null) {
-            mObservableWriter = observable
-                    .map(new Func1<PrintStream, Long>() {
-                        @Override
-                        public Long call(PrintStream out) {
-                            ULog.d(" --- heart  [" + heartCount + "]");
-                            out.println(SocketUtils.getHeartRequest(heartCount));
-                            return heartCount++;
-                        }
-                    })
-                    .share()
-                    // .debounce(1, TimeUnit.SECONDS)
-                    .delay(5, TimeUnit.SECONDS)
-                    .repeat();
-
-
+                if (mObservableWriter == null && observable != null) {
+                    mObservableWriter = observable
+                            .map(new Func1<PrintStream, Long>() {
+                                @Override
+                                public Long call(PrintStream out) {
+                                    ULog.d(" --- heart  [" + heartCount + "]");
+                                    out.println(SocketUtils.getHeartRequest(heartCount));
+                                    return heartCount++;
+                                }
+                            })
+                            .flatMap(new Func1<Long, Observable<Long>>() {
+                                @Override
+                                public Observable<Long> call(Long aLong) {
+                                    if (heartErroCount > HEART_ERROR_CONFINE) {
+                                        ULog.d(" --- heart  error");
+                                        return Observable.error(new SocketException(SocketException.SOCKET_CONNECT_EXCEPTION,
+                                                "HeartReader error!"));
+                                    } else if (heartErroCount > 0) {
+                                        ULog.d(" --- heart  delay[" + (HEART_INTERVAL * heartErroCount) +"]");
+                                        return Observable.just(aLong).delay(HEART_INTERVAL * heartErroCount, TimeUnit.SECONDS);
+                                    }
+                                    return Observable.just(aLong).delay(HEART_INTERVAL, TimeUnit.SECONDS);
+                                }
+                            })
+                            .repeat()
+                            .share();
         }
         return mObservableWriter;
     }
 
 
     private Observable<HeartMsgBean> mObservableReader;
-    /** 心跳数据出错次数 */
-    private int readerError = 0;
 
     private synchronized Observable<HeartMsgBean> creatHeartReader(final Observable<BufferedReader> obs) {
         if (mObservableReader == null && null != obs) {
@@ -87,7 +104,7 @@ public final class Socket2Heart {
                         public HeartMsgBean call(BufferedReader bufferedReader) {
                             try {
                                 String str = bufferedReader.readLine();
-                                ULog.d("  ---  HeartReader " + str);
+                                ULog.d(" --- Heart FeedBack --> " + str);
                                 if (null != str && str.length() > 0) {
                                     return new Gson().fromJson(str, HeartMsgBean.class);
                                 }
@@ -97,30 +114,28 @@ public final class Socket2Heart {
                             return null;
                         }
                     })
-                    .doOnNext(new Action1<HeartMsgBean>() { // doOnNext 只适用于debug，看看而已
+                    .flatMap(new Func1<HeartMsgBean, Observable<HeartMsgBean>>() {
                         @Override
-                        public void call(HeartMsgBean msgBean) {
-                            if (null == msgBean) {
-                                ULog.e("null == socketMegBean [" + readerError + "]");
-                                readerError++;
+                        public Observable<HeartMsgBean> call(HeartMsgBean heartMsgBean) {
+                            if (null == heartMsgBean) {
+                                ULog.e("null == socketMegBean [" + heartErroCount + "]");
+                                heartErroCount++;
                             } else {
-                                readerError = 0;
-                                ULog.i(msgBean.toString());
+                                heartErroCount = 0;
+                                ULog.i(" --- GSON fromJson --> " + heartMsgBean.toString());
                             }
-                        }
-                    })
-                    .repeatWhen(new Func1<Observable<? extends Void>, Observable<?>>() {
-                        @Override
-                        public Observable<?> call(Observable<? extends Void> observable) {
-                            if (readerError > 5) {
+
+                            if (heartErroCount > HEART_ERROR_CONFINE) {
                                 return Observable.error(new SocketException(SocketException.SOCKET_CONNECT_EXCEPTION,
                                         "HeartReader error!"));
-                            } else if (readerError > 0) {
-                                return observable.delay(5 * readerError, TimeUnit.SECONDS);
+                            } else if (heartErroCount > 0) {
+                                return Observable.just(heartMsgBean).delay(HEART_INTERVAL * heartErroCount, TimeUnit.SECONDS);
                             }
-                            return observable;
+
+                            return Observable.just(heartMsgBean);
                         }
                     })
+                    .repeat()
                     .share();
         }
 
