@@ -1,34 +1,39 @@
 package com.dongfang.rx.socket;
 
-import com.dongfang.rx.Bean.HeartMsgBean;
+import com.dongfang.rx.Bean.BaseBean;
 import com.dongfang.rx.Bean.SocketMsgBean;
 import com.dongfang.rx.utils.ULog;
+import com.google.gson.Gson;
 
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
+import rx.Subscriber;
 import rx.Subscription;
-import rx.functions.Action1;
 import rx.functions.Func1;
-import rx.schedulers.Schedulers;
 
 /**
  * Created by dongfang on 16/4/6.
  */
 public final class SocketBus {
     public static final String TAG = "SocketBus";
-    private static final String UI_ID = "769U";
+    private static final long UI_ID = 777000;
+
     private SocketMsgBean mSocketMegBean, mHttpMegBean;
 
+    private BaseBean<SocketMsgBean> mBaseBean;
 
-    private Observable<SocketMsgBean> mObservableHttp, mObservableSocket, mObservableGrable;
-
-    private Observable<HeartMsgBean> mObservabelHeart;
+    private Observable<String> mObsMsgHttp, mObsMsgSocket;
 
 
+    private Observable<BaseBean> mObservableGrable;
+    private Observable<Socket> mObservableSocket;
     private Subscription mSubscription;
+
+
+    private Socket2Connect mSocket2Connect;
 
 
     private HashMap mHashMap;
@@ -47,32 +52,94 @@ public final class SocketBus {
         // mSocketMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
 
         mHttpMegBean = new SocketMsgBean();
-        mHttpMegBean.id = UI_ID;
+        mHttpMegBean.msgId = UI_ID;
         mHttpMegBean.mstType = SocketMsgBean.MSG_TYPE_HTTP;
-        mHttpMegBean.msg = "OK";
-        mHttpMegBean.data = "{\"a\":10}";
         mHttpMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
+        mBaseBean = new BaseBean<SocketMsgBean>();
 
+
+        mBaseBean.id = UI_ID;
+        mBaseBean.msg = "OK";
+        mBaseBean.data = new Gson().toJson(mHttpMegBean);
 
         mHashMap = new HashMap();
+        try {
+            mSocket2Connect =
+                    //Socket2Connect.getInstance("192.168.5.6", 20011);
+                    Socket2Connect.getInstance("10.128.7.25", 20011);
+            mObservableSocket = mSocket2Connect.startConnect();
 
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
 
-        mObservableHttp = Observable
-                .interval(4, TimeUnit.SECONDS)
-                .map(new Func1<Long, Long>() {
+        initObsHttp();
+
+    }
+
+    /** 全局获取 推送的Observable */
+    private Observable<BaseBean> getObsGrable() {
+        initObsHttp();
+        mObservableGrable = Observable.merge(mSocket2Connect.getObservableReader().repeat(), mObsMsgHttp)
+//        mObservableGrable = mSocket2Connect.getObservableReader()
+                .filter(new Func1<String, Boolean>() {
                     @Override
-                    public Long call(Long aLong) {
-                        return System.currentTimeMillis() % 10;
+                    public Boolean call(String s) {
+                        ULog.e(" -- " + s);
+                        // 过滤空的数据
+                        return null != s && s.length() > 0;
                     }
                 })
-                .flatMap(new Func1<Long, Observable<SocketMsgBean>>() {
+                .map(new Func1<String, BaseBean>() {
                     @Override
-                    public Observable<SocketMsgBean> call(Long aLong) {
-                        mHttpMegBean.id = UI_ID + aLong;
-                        return Observable.just(mHttpMegBean);
+                    public BaseBean call(String s) {
+                        BaseBean bean = null;
+                        try {
+                            bean = new Gson().fromJson(s, BaseBean.class);
+                        } catch (Throwable e) {
+                            ULog.e(e.getMessage());
+                        }
+                        // ULog.i(" -- map BaseBean == " + bean);
+                        return bean;
                     }
                 })
-        ;
+                .filter(new Func1<BaseBean, Boolean>() {
+                    @Override
+                    public Boolean call(BaseBean bean) {
+//                        ULog.i(" --filter  BaseBean == " + bean);
+                        return true;
+                    }
+                })
+                .share();
+
+
+        return mObservableGrable;
+    }
+
+    /** 轮询http 获取推送失败的信息 */
+    private void initObsHttp() {
+        if (mObsMsgHttp == null) {
+            mObsMsgHttp = Observable.just(1l)
+//                    .interval(4, TimeUnit.SECONDS)
+                    .map(new Func1<Long, Long>() {
+                        @Override
+                        public Long call(Long aLong) {
+                            return System.currentTimeMillis() % 10;
+                        }
+                    })
+                    .flatMap(new Func1<Long, Observable<String>>() {
+                        @Override
+                        public Observable<String> call(Long aLong) {
+                            mBaseBean.id = UI_ID + aLong;
+                            mHttpMegBean.msgId = mBaseBean.id;
+                            mBaseBean.data = new Gson().toJson(mHttpMegBean);
+                            return Observable.just(new Gson().toJson(mBaseBean)).delay(5, TimeUnit.SECONDS);
+                        }
+                    })
+                    .repeat()
+                    .share();
+        }
+
 
         // mObservableSocket = Observable
         //         .interval(5, TimeUnit.SECONDS)
@@ -90,84 +157,68 @@ public final class SocketBus {
         //             }
         //         })
         // ;
-
-        try {
-            final Socket2Connect socket2Connect = Socket2Connect.getInstance("192.168.5.6", 20011);
-//            Socket2Connect socket2Connect = Socket2Connect.getInstance("10.128.7.25", 20011);
-            socket2Connect.startConnect()
-                    .map(new Func1<Socket, Socket>() {
-                        @Override
-                        public Socket call(Socket socket) {
-//                            mObservabelHeart = Socket2Heart.getInstance()
-//                                    .getHeartObservable(socket2Connect.getObservaleWriter(), socket2Connect.getObservableReader());
-//
-//
-//                            mObservabelHeart.subscribe(new Action1<HeartMsgBean>() {
-//                                                           @Override
-//                                                           public void call(HeartMsgBean heartMsgBean) {
-//
-//                                                           }
-//                                                       }, new Action1<Throwable>() {
-//                                                           @Override
-//                                                           public void call(Throwable throwable) {
-//                                                               ULog.e(throwable.toString());
-//                                                           }
-//                                                       }
-//                            );
-                            return null;
-                        }
-                    });
-
-//            mObservabelHeart = Socket2Heart.getInstance()
-//                    .getHeartObservable(socket2Connect.getObservaleWriter(), socket2Connect.getObservableReader());
-//            mObservabelHeart.subscribe();
-
-            // mObservableSocket = Socket2Connect.getInstance("10.128.7.25", 20011).getObservableSocket();
-            // mObservableSocket.subscribe();
-        } catch (SocketException e) {
-            // TODO: 心跳断了之后重连,有可能是一直重连
-
-            e.printStackTrace();
-            // mObservableSocket = null;
-        }
     }
 
-    public void start() {
-        if (null != mSubscription && !mSubscription.isUnsubscribed())
-            return;
 
-//        if (null != mObservableSocket)
-//            Socket2Connect.getInstance().startConnect();
-
-
-        mObservableGrable = Observable.merge(mObservableHttp, mObservableSocket)
-                .subscribeOn(Schedulers.io())
-                .filter(new Func1<SocketMsgBean, Boolean>() {
+    public Subscription subscripMsg(final Class aClass, Subscriber subscriber) {
+        return getObsGrable()
+                .map(new Func1<BaseBean, Object>() {
                     @Override
-                    public Boolean call(SocketMsgBean socketMegBean) {
-                        if (socketMegBean.mstType != SocketMsgBean.MSG_TYPE_HTTP)
-                            ULog.i(socketMegBean.toString());
-                        if (mHashMap.containsKey(socketMegBean.id)) {
-                            ULog.i("containsKey [" + socketMegBean.id + "]");
-                            return false;
-                        }
-                        mHashMap.put(socketMegBean.id, socketMegBean.id);
-                        return true;
+                    public Object call(BaseBean bean) {
+                        ULog.i(bean.toString());
+                        try {
+                            return new Gson().fromJson(bean.data, aClass);
+                        } catch (Throwable e) {}
+                        return null;
                     }
                 })
-                .share();
-        mSubscription = mObservableGrable.subscribe(
-                new Action1<SocketMsgBean>() {
+                .subscribe(subscriber);
+    }
+
+
+    public void start() {
+        if (null != mSubscription) {
+            mSubscription.unsubscribe();
+        }
+        mSubscription = getObsGrable()
+                .map(new Func1<BaseBean, SocketMsgBean>() {
                     @Override
-                    public void call(SocketMsgBean socketMegBean) {
-                        if (socketMegBean.mstType != SocketMsgBean.MSG_TYPE_HTTP)
-                            ULog.d(socketMegBean.toString());
+                    public SocketMsgBean call(BaseBean bean) {
+                        ULog.i(bean.toString());
+                        try {
+                            return new Gson().fromJson(bean.data, SocketMsgBean.class);
+                        } catch (Throwable e) {}
+                        return null;
                     }
-                },
-                new Action1<Throwable>() {
+                })
+                .filter(new Func1<SocketMsgBean, Boolean>() {
                     @Override
-                    public void call(Throwable throwable) {
-                        ULog.e(throwable.toString());
+                    public Boolean call(SocketMsgBean socketMsgBean) {
+                        if (null != socketMsgBean && !mHashMap.containsKey(socketMsgBean.msgId)) {
+                            mHashMap.put(socketMsgBean.msgId, socketMsgBean.msgId);
+                            return true;
+                        }
+
+                        if (null != socketMsgBean) {
+                            ULog.i("filter [" + (null == socketMsgBean ? "null" : socketMsgBean.msgId) + "]");
+                        }
+
+                        return false;
+                    }
+                })
+                .subscribe(new Subscriber<SocketMsgBean>() {
+                    @Override
+                    public void onCompleted() {ULog.i("onCompleted"); }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        ULog.e(e.getMessage());
+                        mSubscription.unsubscribe();
+                    }
+
+                    @Override
+                    public void onNext(SocketMsgBean socketMsgBean) {
+                        ULog.i("onNext -->" + (null == socketMsgBean ? "socketMsgBean == null" : socketMsgBean.toString()));
                     }
                 });
     }
@@ -175,15 +226,15 @@ public final class SocketBus {
     public void stop() {
         mSubscription.unsubscribe();
         mHashMap.clear();
+//        mSocket2Connect.disConnect();
     }
-
 
     /**
-     * 获取推送消息的Observable
+     * 修改心跳时间
+     *
+     * @param time 秒
      */
-    public Observable<SocketMsgBean> getObservable4Msg() {
-        return mObservableGrable;
+    public void heartIntervalChange(int time) {
+        mSocket2Connect.changeHeartInterval(time);
     }
-
-
 }

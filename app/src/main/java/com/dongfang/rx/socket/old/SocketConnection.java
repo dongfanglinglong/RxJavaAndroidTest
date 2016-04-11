@@ -1,8 +1,9 @@
-package com.dongfang.rx.socket;
+package com.dongfang.rx.socket.old;
 
 import android.os.Build;
 import android.util.Patterns;
 
+import com.dongfang.rx.socket.SocketException;
 import com.dongfang.rx.utils.ULog;
 
 import java.io.IOException;

@@ -29,14 +29,21 @@ public class MainActivity extends AppCompatActivity {
         mBtnStart = (Button) findViewById(R.id.button_start);
         mBtnStop = (Button) findViewById(R.id.button_stop);
         mSocketBus = new SocketBus();
+
+
+        findViewById(R.id.button_heart_change).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mSocketBus.heartIntervalChange(5);
+            }
+        });
+
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 mSocketBus.start();
             }
         });
-
-
         mBtnStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -44,6 +51,14 @@ public class MainActivity extends AppCompatActivity {
                 // mSubscription.unsubscribe();
             }
         });
+
+        findViewById(R.id.button_subscribe).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+            }
+        });
+
     }
 
 

@@ -1,6 +1,7 @@
-package com.dongfang.rx.socket;
+package com.dongfang.rx.socket.old;
 
 import com.dongfang.rx.Bean.SocketMsgBean;
+import com.dongfang.rx.socket.SocketException;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;
 
@@ -33,7 +34,7 @@ public class SocekBus {
     private SocketMsgBean mSocketMegBean, mBeanRec;
     private int id = 0;
     private boolean close = false;
-    private static final String UI_ID = "769U";
+    private static final long UI_ID = 9000l;
 
     public SocekBus() {
         init();
@@ -41,9 +42,6 @@ public class SocekBus {
 
     private void init() {
         mSocketMegBean = new SocketMsgBean();
-        mSocketMegBean.id = UI_ID;
-        mSocketMegBean.msg = "OK";
-        mSocketMegBean.data = "{\"a\":10}";
         mSocketMegBean.dataArrary = new String[]{"1", "2", "3", "4"};
     }
 
@@ -110,7 +108,7 @@ public class SocekBus {
                                                 @Override
                                                 public Boolean call(Socket socket) {
                                                     ULog.i("zip1");
-                                                    mSocketMegBean.id = UI_ID + id++;
+                                                    // mSocketMegBean.id = UI_ID + id++;
                                                     ULog.d(mSocketMegBean.toString());
 
                                                     String msg = new Gson().toJson(mSocketMegBean);
