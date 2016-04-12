@@ -1,4 +1,4 @@
-package com.dongfang.rx.socket;
+package com.dongfang.rx.exception;
 
 /**
  * Created by dongfang on 2016/3/30.

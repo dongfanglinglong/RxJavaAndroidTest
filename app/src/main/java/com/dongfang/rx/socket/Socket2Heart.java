@@ -4,6 +4,7 @@ import android.support.annotation.Size;
 
 import com.dongfang.rx.Bean.BaseBean;
 import com.dongfang.rx.Bean.HeartMsgBean;
+import com.dongfang.rx.exception.SocketException;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -36,34 +37,31 @@ public final class Socket2Heart {
     /** 第几次心跳记录 */
     private long heartCount = 0;
     /** 心跳间隔时间 */
-    private int heartInterval = HEART_INTERVAL_DEFAULT;
+    private int mHeartInterval = HEART_INTERVAL_DEFAULT;
 
+    /** 注册心跳逻辑的 subscription */
     private Subscription mSubscriptionHeart;
 
-    private static Socket2Heart sSocket2Heart;
-
-    private Socket2Heart() { }
-
-    public static synchronized Socket2Heart getInstance() {
-        if (null == sSocket2Heart) {
-            sSocket2Heart = new Socket2Heart();
-        }
-        return sSocket2Heart;
+    public static Socket2Heart getInstance() {
+        return Socket2HeartLoader.INSTANCE;
     }
 
+    private Socket2Heart() {}
 
+    /** zip {@code mOBSHeart} 和 {@code mOBSHeartWriter} 得到的新的Observable */
+    private Observable<HeartMsgBean> mOBSHeart = null;
     /** 向socket写数据 */
-    private Observable<HeartMsgBean> mObservableHeart = null;
-    private Observable<Long> mObsHeartWriter;
-    private Observable<HeartMsgBean> mObsHeartReader;
+    private Observable<Long> mOBSHeartWriter = null;
+    /** 向socket读数据 */
+    private Observable<HeartMsgBean> mOBSHeartReader = null;
 
 
     /** 停止心跳逻辑 */
     public void stopHeart() {
         if (mSubscriptionHeart != null)
             mSubscriptionHeart.unsubscribe();
-        mObsHeartReader = null;
-        mObsHeartWriter = null;
+        mOBSHeartReader = null;
+        mOBSHeartWriter = null;
     }
 
     /**
@@ -79,14 +77,14 @@ public final class Socket2Heart {
                                                Observable<String> obsHeartReader,
                                                Subscriber subscriber,
                                                @Size(min = 1) int time) {
-        heartInterval = time;
+        mHeartInterval = time;
         heartErroCount = 0;
 
         if (null != mSubscriptionHeart) {
             mSubscriptionHeart.unsubscribe();
         }
 
-        mObservableHeart = creatHeartWriter(obsHeartWriter)
+        mOBSHeart = creatHeartWriter(obsHeartWriter)
                 .zipWith(creatHeartReader(obsHeartReader), new Func2<Long, HeartMsgBean, HeartMsgBean>() {
                     @Override
                     public HeartMsgBean call(Long aLong, HeartMsgBean heartMsgBean) {
@@ -102,11 +100,11 @@ public final class Socket2Heart {
                 })
                 .share();
 
-        mSubscriptionHeart = mObservableHeart.subscribe(subscriber);
-        return mObservableHeart;
+        mSubscriptionHeart = mOBSHeart.subscribe(subscriber);
+        return mOBSHeart;
     }
 
-
+    /** {@link Socket2Heart#startHeart(Observable, Observable, Subscriber, int)} */
     public Observable<HeartMsgBean> startHeart(Observable<PrintStream> obsW,
                                                Observable<String> obsR,
                                                Subscriber subscriber) {
@@ -117,7 +115,7 @@ public final class Socket2Heart {
     /** 创建写入心跳信息的Observable */
     private synchronized Observable<Long> creatHeartWriter(Observable<PrintStream> observable) {
         if (observable != null) {
-            mObsHeartWriter = observable
+            mOBSHeartWriter = observable
                     .map(new Func1<PrintStream, Long>() {
                         @Override
                         public Long call(PrintStream out) {
@@ -135,23 +133,23 @@ public final class Socket2Heart {
                                 return Observable.error(new SocketException(SocketException.SOCKET_CONNECT_EXCEPTION,
                                         "Socket outputStream error!"));
                             } else if (heartErroCount > 0) {
-                                ULog.d(" --- heart write delay[" + (heartInterval * heartErroCount) + "]");
-                                return Observable.just(aLong).delay(heartInterval * heartErroCount, TimeUnit.SECONDS);
+                                ULog.d(" --- heart write delay[" + (mHeartInterval * heartErroCount) + "]");
+                                return Observable.just(aLong).delay(mHeartInterval * heartErroCount, TimeUnit.SECONDS);
                             }
-                            return Observable.just(aLong).delay(heartInterval, TimeUnit.SECONDS);
+                            return Observable.just(aLong).delay(mHeartInterval, TimeUnit.SECONDS);
                         }
                     })
                     .repeat()
                     .share();
         }
-        return mObsHeartWriter;
+        return mOBSHeartWriter;
     }
 
 
     /** 创建读取心跳信息的Observable */
     private synchronized Observable<HeartMsgBean> creatHeartReader(final Observable<String> observable) {
         if (null != observable) {
-            mObsHeartReader = observable
+            mOBSHeartReader = observable
                     .flatMap(new Func1<String, Observable<HeartMsgBean>>() {
                         @Override
                         public Observable<HeartMsgBean> call(String str) {
@@ -172,7 +170,7 @@ public final class Socket2Heart {
                                 return Observable.error(new SocketException(SocketException.SOCKET_CONNECT_EXCEPTION,
                                         "Socket inputStream error!"));
                             } else if (heartErroCount > 0) {
-                                return Observable.just(msgBean).delay(heartInterval * heartErroCount, TimeUnit.SECONDS);
+                                return Observable.just(msgBean).delay(mHeartInterval * heartErroCount, TimeUnit.SECONDS);
                             }
 
                             return Observable.just(msgBean);
@@ -188,7 +186,7 @@ public final class Socket2Heart {
                     .share();
         }
 
-        return mObsHeartReader;
+        return mOBSHeartReader;
     }
 
     /**
@@ -210,6 +208,17 @@ public final class Socket2Heart {
 
     /** 获取心跳间隔 */
     public int getHeartInterval() {
-        return heartInterval;
+        return mHeartInterval;
+    }
+
+
+    /** 除心跳外，{@code mOBSHeartReader} 允许出错的上限 */
+    public int getMaxNullLimit() {
+        return HEART_ERROR_LIMIT * mHeartInterval + 2;
+    }
+
+
+    public static class Socket2HeartLoader {
+        private static final Socket2Heart INSTANCE = new Socket2Heart();
     }
 }

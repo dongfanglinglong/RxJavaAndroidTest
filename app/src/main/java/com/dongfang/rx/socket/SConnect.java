@@ -2,18 +2,19 @@ package com.dongfang.rx.socket;
 
 import android.util.Patterns;
 
+import com.dongfang.rx.exception.SocketException;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
 /**
  * 用于socket建链用
- * <p>
- * <p>
+ * <p/>
+ * <p/>
  * Created by dongfang on 16/4/8.
  */
 public class SConnect {
-
 
     /** socket建链超时时间 */
     private final static int TIME_OUT = 2 * 1000; // 15*1000
@@ -52,7 +53,7 @@ public class SConnect {
      * @throws SocketException
      */
     public synchronized void connect() throws SocketException {
-        if (mSocket == null || mSocket.isClosed() ) {
+        if (mSocket == null || mSocket.isClosed()) {
             close();
             try {
                 mSocket = new Socket();

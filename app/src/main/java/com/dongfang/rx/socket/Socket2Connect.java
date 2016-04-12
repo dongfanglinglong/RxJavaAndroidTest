@@ -1,6 +1,7 @@
 package com.dongfang.rx.socket;
 
 import com.dongfang.rx.Bean.HeartMsgBean;
+import com.dongfang.rx.exception.SocketException;
 import com.dongfang.rx.utils.ULog;
 
 import java.io.BufferedReader;
@@ -24,6 +25,12 @@ import rx.schedulers.Schedulers;
  */
 public final class Socket2Connect {
 
+    /** socket链接失败时,重连次数的上限值 */
+    private static final int RETRY_COUNT_LIMIT = 2; //5
+    /** 重连间隔时间[3,6,9,12,15] */
+    private static final int RETRY_CONNECT_TIME_INTERVAL = 1; //3
+
+
     /** 向socket写数据 */
     private Observable<PrintStream> mObservableWriter = null;
     /** 从socket读取数据（或消息） */
@@ -40,10 +47,7 @@ public final class Socket2Connect {
     /** 输入流，从socket读取消息（或消息） */
     private BufferedReader mBufferedReader = null;
 
-    /** socket链接失败时,重连次数的上限值 */
-    private static final int RETRY_COUNT_LIMIT = 2; //5
-    /** 重连间隔时间[3,6,9,12,15] */
-    private static final int RETRY_CONNECT_TIME_INTERVAL = 1; //3
+
     /** 重连的次数 */
     private int retryCount = 0;
 
@@ -301,7 +305,7 @@ public final class Socket2Connect {
                             mReaderErrorCount = 0;
                         }
 
-                        if (mReaderErrorCount > (mSocet2Heart.getHeartInterval() * Socket2Heart.HEART_ERROR_LIMIT) + 2) {
+                        if (mReaderErrorCount > mSocet2Heart.getMaxNullLimit()) {
                             mReaderErrorCount = 0;
                             return Observable.error(new SocketException(SocketException.SOCKET_READER_EXCEPTION, "Socket inputStream error! "));
                         }

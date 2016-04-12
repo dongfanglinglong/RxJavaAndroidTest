@@ -1,7 +1,7 @@
 package com.dongfang.rx.socket.old;
 
 import com.dongfang.rx.Bean.SocketMsgBean;
-import com.dongfang.rx.socket.SocketException;
+import com.dongfang.rx.exception.SocketException;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;
 

@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.dongfang.rx.exception.SocketException;
 import com.dongfang.rx.socket.SocketBus;
 
 import rx.Subscription;
@@ -28,20 +29,24 @@ public class MainActivity extends AppCompatActivity {
         mTextView = (TextView) findViewById(R.id.textview);
         mBtnStart = (Button) findViewById(R.id.button_start);
         mBtnStop = (Button) findViewById(R.id.button_stop);
-        mSocketBus = new SocketBus();
+        mSocketBus = SocketBus.getInstance();
 
 
         findViewById(R.id.button_heart_change).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mSocketBus.heartIntervalChange(5);
+                mSocketBus.heartIntervalChange(15);
             }
         });
 
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mSocketBus.start();
+                try {
+                    mSocketBus.start();
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                }
             }
         });
         mBtnStop.setOnClickListener(new View.OnClickListener() {
