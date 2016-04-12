@@ -4,57 +4,50 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
-import com.dongfang.rx.socket.old.SocekBus;
+import com.dongfang.rx.exception.SocketException;
+import com.dongfang.rx.socket.SocketBus;
 import com.dongfang.rx.utils.ULog;
 
 
-/**
- *
- */
 public class MyService extends Service {
-
-
-    //  private Handler mHandler;
-    private SocekBus mSocekBus;
+    private SocketBus mSocketBus;
 
     @Override
     public void onCreate() {
         super.onCreate();
-
         ULog.d("------ ");
-        //  mHandler = new Handler();
-        mSocekBus = new SocekBus();
+
+        mSocketBus = SocketBus.getInstance();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        int iii = intent.getIntExtra("xxx", 0);
-        if (iii == 1) {
+        String action = intent.getStringExtra("action");
+        ULog.d("------ action = " + action);
+        if ("stop".equals(action)) {
             stopSelf();
+        } else {
+            if (null != mSocketBus && !mSocketBus.isStarted()) {
+                try {
+                    mSocketBus.start();
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-
-        ULog.d("------ iii = " + iii);
-
-        int i = super.onStartCommand(intent, flags, startId);
-        if (!mSocekBus.isConnect()) {
-            mSocekBus.stat();
-        }
-        return i;
+        return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-//        return mBinder;
-
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-
-        if (mSocekBus == null) {
-            mSocekBus.stop();
+        if (mSocketBus != null) {
+            mSocketBus.stop();
         }
     }
 }

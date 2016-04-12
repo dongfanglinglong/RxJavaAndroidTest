@@ -14,6 +14,8 @@ import java.util.Map;
 
 /**
  * Created by dongfang on 2016/3/30.
+ *
+ * @deprecated
  */
 public class SocketConnection {
     private static final String TAG = "SocketConnection";

@@ -67,31 +67,41 @@ public final class SocketBus {
     }
 
     /** 触发socket链接，同时初始化{@code mOBSSokcet} 和 {@code mSocket2Connect} 等对象 */
-    public void start() throws SocketException {
-        mSocket2Connect = //Socket2Connect.getInstance("192.168.5.6", 20011);
-                Socket2Connect.getInstance("10.128.7.25", 20011);
-        mOBSSocket = mSocket2Connect.startConnect();
+    public synchronized void start() throws SocketException {
+        if (null == mSocket2Connect) {
+            mSocket2Connect = //Socket2Connect.getInstance("192.168.5.6", 20011);
+                    Socket2Connect.getInstance("10.128.7.25", 20011);
+            mOBSSocket = mSocket2Connect.startConnect();
 
-
-        Observable.just(1)
-                .subscribeOn(Schedulers.io())
-                .delaySubscription(5, TimeUnit.SECONDS)
-                .subscribe(new Action1<Integer>() {
-                    @Override
-                    public void call(Integer integer) {
-                        testSocketMsg();
-                    }
-                });
+            // TODO: 2016/4/12  测试用，需要删除
+            // Observable.just(1)
+            //         .subscribeOn(Schedulers.io())
+            //         .delaySubscription(5, TimeUnit.SECONDS)
+            //         .subscribe(new Action1<Integer>() {
+            //             @Override
+            //             public void call(Integer integer) {
+            //                 testSocketMsg();
+            //             }
+            //         });
+        }
     }
 
     public void stop() {
-        mSUBSPSocketMsgTest.unsubscribe();
+        if (mSUBSPSocketMsgTest != null)
+            mSUBSPSocketMsgTest.unsubscribe();
         for (Subscription subscription : mSubscriptionList) {
             subscription.unsubscribe();
         }
         mHashMap.clear();
         mSubscriptionList.clear();
         mSocket2Connect.disConnect();
+
+        mSocket2Connect = null;
+    }
+
+    /** 是否开始连接 */
+    public boolean isStarted() {
+        return null != mOBSSocket;
     }
 
 
@@ -230,21 +240,21 @@ public final class SocketBus {
         }
 
         // --------- METHOD 1 ---------
-        mSUBSPSocketMsgTest = subscripMsg(SocketMsgBean.class, new Subscriber<SocketMsgBean>() {
-            @Override
-            public void onCompleted() {ULog.i("onCompleted"); }
-
-            @Override
-            public void onError(Throwable e) {
-                ULog.e(e.getMessage());
-                mSUBSPSocketMsgTest.unsubscribe();
-            }
-
-            @Override
-            public void onNext(SocketMsgBean socketMsgBean) {
-                ULog.i("onNext -->" + (null == socketMsgBean ? "socketMsgBean == null" : socketMsgBean.toString()));
-            }
-        });
+//        mSUBSPSocketMsgTest = subscripMsg(SocketMsgBean.class, new Subscriber<SocketMsgBean>() {
+//            @Override
+//            public void onCompleted() {ULog.i("onCompleted"); }
+//
+//            @Override
+//            public void onError(Throwable e) {
+//                ULog.e(e.getMessage());
+//                mSUBSPSocketMsgTest.unsubscribe();
+//            }
+//
+//            @Override
+//            public void onNext(SocketMsgBean socketMsgBean) {
+//                ULog.i("onNext -->" + (null == socketMsgBean ? "socketMsgBean == null" : socketMsgBean.toString()));
+//            }
+//        });
 
         // --------- METHOD 2 ---------
         mSUBSPSocketMsgTest = getGrablePushMsgObservable()

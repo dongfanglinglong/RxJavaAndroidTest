@@ -168,17 +168,21 @@ public final class Socket2Connect {
         mObservableWriter = null;
         mObservableConnect = null;
 
-        try {
-            mBufferedReader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            mBufferedReader = null;
+        if (mPrintStream != null) {
+            try {
+                mBufferedReader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                mBufferedReader = null;
+            }
         }
 
-        mPrintStream.flush();
-        mPrintStream.close();
-        mPrintStream = null;
+        if (mPrintStream != null) {
+            mPrintStream.flush();
+            mPrintStream.close();
+            mPrintStream = null;
+        }
 
         if (null != mSocet2Heart)
             mSocet2Heart.stopHeart();

@@ -22,6 +22,8 @@ import rx.schedulers.Schedulers;
 
 /**
  * Created by dongfang on 2016/3/30.
+ *
+ * @deprecated
  */
 public class SocekBus {
 

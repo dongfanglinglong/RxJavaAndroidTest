@@ -1,66 +1,103 @@
 package com.dongfang.rx;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.dongfang.rx.exception.SocketException;
+import com.dongfang.rx.Bean.SocketMsgBean;
+import com.dongfang.rx.service.MyService;
 import com.dongfang.rx.socket.SocketBus;
+import com.dongfang.rx.utils.ULog;
 
+import rx.Subscriber;
 import rx.Subscription;
 
 public class MainActivity extends AppCompatActivity {
 
 
     private TextView mTextView;
-    private Button mBtnStart, mBtnStop;
+    private Button mBtnStart, mBtnStop, mBtnHeartChange, mBtnSubc, mBtnUnSubc;
 
 
     private SocketBus mSocketBus;
     private Subscription mSubscription;
 
+
+    private Context mContext;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        mContext = this;
 
         mTextView = (TextView) findViewById(R.id.textview);
         mBtnStart = (Button) findViewById(R.id.button_start);
         mBtnStop = (Button) findViewById(R.id.button_stop);
+        mBtnHeartChange = (Button) findViewById(R.id.button_heart_change);
+        mBtnSubc = (Button) findViewById(R.id.button_subscribe);
+        mBtnUnSubc = (Button) findViewById(R.id.button_unsubscribe);
+
+
         mSocketBus = SocketBus.getInstance();
 
-
-        findViewById(R.id.button_heart_change).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mSocketBus.heartIntervalChange(15);
-            }
-        });
 
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    mSocketBus.start();
-                } catch (SocketException e) {
-                    e.printStackTrace();
-                }
+                startService(new Intent(mContext, MyService.class));
+                mTextView.setText(mBtnStart.getText());
+            }
+        });
+        mBtnHeartChange.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mSocketBus.heartIntervalChange(15);
+                mTextView.setText("Change heart interval to 15s !");
             }
         });
         mBtnStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mSocketBus.stop();
-                // mSubscription.unsubscribe();
+                Intent intent = new Intent(mContext, MyService.class);
+                intent.putExtra("action", "stop");
+                startService(intent);
+                mTextView.setText(mBtnStop.getText());
             }
         });
 
-        findViewById(R.id.button_subscribe).setOnClickListener(new View.OnClickListener() {
+        mBtnSubc.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                mSubscription = mSocketBus.subscripMsg(SocketMsgBean.class, new Subscriber() {
+                    @Override
+                    public void onCompleted() {
 
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onNext(Object o) {
+                        ULog.e("onNext -->" + o);
+                    }
+                });
+            }
+        });
+
+        mBtnUnSubc.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (null != mSubscription) {
+                    mSubscription.unsubscribe();
+                }
             }
         });
 
