@@ -6,6 +6,7 @@ import com.dongfang.rx.exception.SocketException;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;
 
+import java.io.PrintStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -110,30 +111,34 @@ public final class SocketBus {
      * 建立能够得到 {@link BaseBean} 对象的Observable
      * <p/>
      * <p>1. 会过滤空数据; （当 {@code str == null || str.length() == 0 } , str由socket推送或http轮询获取）
-     * <p>2. 当 str 无法转换成 {@link BaseBean}时，会返回 null
+     * <p>2. 会过滤 当 str 无法转换成 {@link BaseBean}时的消息
+     *
+     * @return Observable<BaseBean>
      */
     private Observable<BaseBean> getGrablePushMsgObservable() {
         mOBSPushMsg = Observable.merge(mSocket2Connect.getObservableReader().repeat(), mObsMsgHttp)
                 // mOBSPushMsg = mSocket2Connect.getObservableReader()
-                .filter(new Func1<String, Boolean>() {
-                    @Override
-                    public Boolean call(String str) {
-                        ULog.e(" -- " + str);
-                        // 过滤空的数据
-                        return null != str && str.length() > 0;
-                    }
-                })
                 .map(new Func1<String, BaseBean>() {
                     @Override
-                    public BaseBean call(String s) {
-                        BaseBean bean = null;
-                        try {
-                            bean = new Gson().fromJson(s, BaseBean.class);
-                        } catch (Throwable e) {
-                            ULog.e(e.getMessage());
+                    public BaseBean call(String str) {
+                        ULog.e(" -- " + str);
+                        if (null != str && str.length() > 0) {
+                            BaseBean bean = null;
+                            try {
+                                bean = new Gson().fromJson(str, BaseBean.class);
+                            } catch (Throwable e) {
+                                ULog.e(e.getMessage());
+                            }
+                            // ULog.i(" -- map BaseBean == " + bean);
+                            return bean;
                         }
-                        // ULog.i(" -- map BaseBean == " + bean);
-                        return bean;
+                        return null;
+                    }
+                })
+                .filter(new Func1<BaseBean, Boolean>() {
+                    @Override
+                    public Boolean call(BaseBean bean) {
+                        return null != bean;
                     }
                 })
                 .share();
@@ -188,24 +193,39 @@ public final class SocketBus {
      * @return {@code Subscription} 对象
      */
     public Subscription subscripMsg(final Class aClass, final Subscriber subscriber, Func1 filterFunc1, Scheduler observeOn) {
-        Observable observable = getGrablePushMsgObservable().map(new Func1<BaseBean, Object>() {
-            @Override
-            public Object call(BaseBean bean) {
-                ULog.i(bean.toString());
-                try {
-                    return new Gson().fromJson(bean.data, aClass);
-                } catch (Throwable e) {}
-                return null;
-            }
-        }).doOnError(new Action1<Throwable>() {
-            @Override
-            public void call(Throwable throwable) {
-                for (Subscription scrip : mSubscriptionList) {
-                    scrip.unsubscribe();
-                }
-                mSubscriptionList.clear();
-            }
-        });
+        Observable observable = getGrablePushMsgObservable()
+                .flatMap(new Func1<BaseBean, Observable<BaseBean>>() {
+                    @Override
+                    public Observable<BaseBean> call(final BaseBean bean) {
+                        return Observable.just(bean).mergeWith(mSocket2Connect.getObservaleWriter().map(new Func1<PrintStream, BaseBean>() {
+                            @Override
+                            public BaseBean call(PrintStream printStream) {
+                                printStream.print(SocketUtils.getSocketMsgFeedback(bean.id));
+                                printStream.flush();
+                                return bean;
+                            }
+                        }));
+                    }
+                })
+                .map(new Func1<BaseBean, Object>() {
+                    @Override
+                    public Object call(BaseBean bean) {
+                        ULog.i(bean.toString());
+                        Object obj = null;
+                        try {
+                            obj = new Gson().fromJson(bean.data, aClass);
+                        } catch (Throwable e) {}
+                        return obj;
+                    }
+                }).doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        for (Subscription scrip : mSubscriptionList) {
+                            scrip.unsubscribe();
+                        }
+                        mSubscriptionList.clear();
+                    }
+                });
 
         if (null != filterFunc1) {
             observable = observable.filter(filterFunc1);

@@ -10,6 +10,7 @@ public class SocketUtils {
     private static final String HEART_ACTION = "LANG_H";
 
     public static final String SOCKET_ACTION_TEST = "TEST";
+    public static final String SOCKET_ACTION_FEEDBACK = "FEEDBACK";
 
 
     public static String getHeartRequest(long num) {
@@ -28,13 +29,27 @@ public class SocketUtils {
 
     public static String getActionRequset(String action) {
         StringBuffer sb = new StringBuffer("GET /");
-        sb.append(HEART_ACTION);
+        sb.append(SOCKET_ACTION_TEST);
         sb.append("?token=88888888");
         sb.append("&nonce=10292837465");
         sb.append("&c=87654");
         sb.append("&sig=83337654");
         sb.append("&cofig=10000");
         sb.append(" HTTP/1.1");
+        return sb.toString();
+    }
+
+
+    public static String getSocketMsgFeedback(long id) {
+        StringBuffer sb = new StringBuffer("GET /");
+        sb.append(SOCKET_ACTION_FEEDBACK);
+        sb.append("?token=99999999");
+        sb.append("?msgid=").append(id);
+        sb.append("&nonce=10292837465");
+        sb.append("&c=87654");
+        sb.append("&sig=83337654");
+        sb.append("&cofig=10000");
+        sb.append(" HTTP/1.1\n");
         return sb.toString();
     }
 }

@@ -320,7 +320,6 @@ public final class Socket2Connect {
                 .share();
     }
 
-
     /**
      * * 修改心跳时间，返回心跳的Observable ,初始化失败会返回null
      *
@@ -363,9 +362,6 @@ public final class Socket2Connect {
     }
 
 
-    private boolean isConnect = false;
-
-
     public Observable<String> getObservableReader() {
         return mObservableReader
                 .filter(new Func1<String, Boolean>() {
@@ -388,5 +384,9 @@ public final class Socket2Connect {
     public int getPort() {
         return mPort;
     }
+
+//    PrintStream getPrintStream() {
+//        return mPrintStream;
+//    }
 
 }
