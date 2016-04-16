@@ -1,6 +1,6 @@
 package com.dongfang.rx.net;
 
-import com.dongfang.rx.Bean.SocketMsgBean;
+import com.dongfang.rx.entity.WeatherAPI;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -17,12 +17,12 @@ import rx.Observer;
 public class HttpClientTest {
 
 
-    HttpClient mHttpClient;
+    HttpBus mHttpClient;
 
 
     @Before
     public void setUp() throws Exception {
-        mHttpClient = HttpClient.getSingleton();
+        mHttpClient = HttpBus.getSingleton();
         System.out.println("setUp");
     }
 
@@ -35,7 +35,7 @@ public class HttpClientTest {
                 .header("User-Agent", "OkHttp Example")
                 .header("dongfang", "linglong111111111")
                 .build();
-        System.out.println("---------request--------\n " +request.toString());
+        System.out.println("---------request--------\n " + request.toString());
 
         try {
             Response response = mHttpClient.getOkHttpClient().newCall(request).execute();
@@ -51,21 +51,22 @@ public class HttpClientTest {
 
     @Test
     public void testGetHttpService() throws Exception {
-        mHttpClient.getHttpService().getSocketMsg(new long[]{1, 2, 3})
-                .subscribe(new Observer<SocketMsgBean>() {
+        mHttpClient.getHttpService().getWeather("shanghai", "18de4eb4b63d4cb08a2bab2629c1d4b3")
+                .subscribe(new Observer<WeatherAPI>() {
                     @Override
                     public void onCompleted() {
-
+                        System.out.println("----------onCompleted-------");
                     }
 
                     @Override
                     public void onError(Throwable e) {
-
+                        System.out.println("----------onError-------");
+                        e.printStackTrace();
                     }
 
                     @Override
-                    public void onNext(SocketMsgBean socketMsgBean) {
-                        System.out.println(socketMsgBean.toString());
+                    public void onNext(WeatherAPI s) {
+                        System.out.println(s.toString());
                     }
                 });
     }

@@ -2,8 +2,8 @@ package com.dongfang.rx.socket;
 
 import android.support.annotation.Size;
 
-import com.dongfang.rx.Bean.BaseBean;
-import com.dongfang.rx.Bean.HeartMsgBean;
+import com.dongfang.rx.entity.BaseBean;
+import com.dongfang.rx.entity.HeartMsgBean;
 import com.dongfang.rx.exception.SocketException;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;

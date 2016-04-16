@@ -8,8 +8,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.dongfang.rx.Bean.SocketMsgBean;
-import com.dongfang.rx.net.HttpClient;
+import com.dongfang.rx.entity.SocketMsgBean;
+import com.dongfang.rx.net.HttpBus;
 import com.dongfang.rx.service.MyService;
 import com.dongfang.rx.socket.SocketBus;
 import com.dongfang.rx.utils.ULog;
@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
 
         ULog.i("onResume");
 
-        HttpClient.getSingleton().getHttpService().getSocketMsg(new long[]{1, 2, 3, 4})
+        HttpBus.getSingleton().getHttpService().getSocketMsg("shanghai","18de4eb4b63d4cb08a2bab2629c1d4b3")
                 .subscribeOn(Schedulers.io())
                 .subscribe(new Observer<SocketMsgBean>() {
                     @Override
@@ -134,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onNext(SocketMsgBean socketMsgBean) {
+                        System.out.println("------------------------");
                         System.out.println(socketMsgBean.toString());
                     }
                 });

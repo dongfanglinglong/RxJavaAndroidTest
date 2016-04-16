@@ -5,6 +5,6 @@ package com.dongfang.rx.config;
  */
 public class AppConfig {
 
-    public static final String BASE_URL = "http://www.baidu.com";
+    public static final String BASE_URL = "https://api.heweather.com";
 
 }
