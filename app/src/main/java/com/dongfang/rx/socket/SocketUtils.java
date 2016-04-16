@@ -1,5 +1,7 @@
 package com.dongfang.rx.socket;
 
+import com.dongfang.rx.config.Your;
+
 /**
  * Created by dongfang on 2016/4/8.
  */
@@ -16,7 +18,7 @@ public class SocketUtils {
     public static String getHeartRequest(long num) {
         StringBuffer sb = new StringBuffer("GET /");
         sb.append(HEART_ACTION);
-        sb.append("?token=88888888");
+        sb.append("?token=").append(Your.sToken);
         sb.append("?num=").append(num);
         sb.append("&nonce=10292837465");
         sb.append("&c=87654");
@@ -30,7 +32,7 @@ public class SocketUtils {
     public static String getActionRequset(String action) {
         StringBuffer sb = new StringBuffer("GET /");
         sb.append(SOCKET_ACTION_TEST);
-        sb.append("?token=88888888");
+        sb.append("?token=").append(Your.sToken);
         sb.append("&nonce=10292837465");
         sb.append("&c=87654");
         sb.append("&sig=83337654");
@@ -43,13 +45,13 @@ public class SocketUtils {
     public static String getSocketMsgFeedback(long id) {
         StringBuffer sb = new StringBuffer("GET /");
         sb.append(SOCKET_ACTION_FEEDBACK);
-        sb.append("?token=99999999");
+        sb.append("?token=").append(Your.sToken);
         sb.append("?msgid=").append(id);
         sb.append("&nonce=10292837465");
         sb.append("&c=87654");
         sb.append("&sig=83337654");
         sb.append("&cofig=10000");
-        sb.append(" HTTP/1.1\n");
+        sb.append(" HTTP/1.1");
         return sb.toString();
     }
 }

@@ -179,7 +179,8 @@ public final class SocketBus {
     /**
      * 1. 通过该方法，可以获取到由服务端推送的 {@code aClass} 对象信息，并让用户在通过参数 {@code subscriber}  实现自己的业务逻辑；<br/>
      * 2. 注册成功之后，会把返回的{@code Subscription} 对象放到{@code mSubscriptionList}列表中<br/>
-     * 3. 如果出现{@link Observable#error(Throwable)}错误,则会中断，同时会让{@code mSubscriptionList}列表中全部对象
+     * 3. 收到消息之后，会对该消息进行反馈
+     * 4. 如果出现{@link Observable#error(Throwable)}错误,则会中断，同时会让{@code mSubscriptionList}列表中全部对象
      * 调用{@link Subscription#unsubscribe()}，之后清空{@code mSubscriptionList}列表<br/>
      * <ul>
      * a. 通过实现参数 {@code filterFunc1 } ，可以对返回的信息进行过滤，得到真正需要的数据；否则设置 null <br/>
@@ -200,7 +201,8 @@ public final class SocketBus {
                         return Observable.just(bean).mergeWith(mSocket2Connect.getObservaleWriter().map(new Func1<PrintStream, BaseBean>() {
                             @Override
                             public BaseBean call(PrintStream printStream) {
-                                printStream.print(SocketUtils.getSocketMsgFeedback(bean.id));
+                                // TODO: 2016/4/14 消息反馈需要进行调整，id应该不对
+                                printStream.println(SocketUtils.getSocketMsgFeedback(bean.id));
                                 printStream.flush();
                                 return bean;
                             }
@@ -240,6 +242,27 @@ public final class SocketBus {
     }
 
     /**
+     * 向服务端发送消息
+     *
+     * @param msg 消息内容
+     * @return Subscription
+     */
+    public Subscription sendMsg(final String msg) {
+        if (mSocket2Connect == null || mSocket2Connect.getObservaleWriter() == null) {
+            return null;
+        }
+
+        return mSocket2Connect.getObservaleWriter().map(new Func1<PrintStream, Object>() {
+            @Override
+            public Object call(PrintStream printStream) {
+                printStream.println(msg);
+                printStream.flush();
+                return null;
+            }
+        }).subscribe();
+    }
+
+    /**
      * 修改心跳时间
      *
      * @param time 秒
@@ -248,9 +271,11 @@ public final class SocketBus {
         mSocket2Connect.changeHeartInterval(time);
     }
 
+
     public static class SocketBusLoader {
         private static final SocketBus INSTANCE = new SocketBus();
     }
+
 
     private Subscription mSUBSPSocketMsgTest;
 
@@ -260,64 +285,64 @@ public final class SocketBus {
         }
 
         // --------- METHOD 1 ---------
-//        mSUBSPSocketMsgTest = subscripMsg(SocketMsgBean.class, new Subscriber<SocketMsgBean>() {
-//            @Override
-//            public void onCompleted() {ULog.i("onCompleted"); }
-//
-//            @Override
-//            public void onError(Throwable e) {
-//                ULog.e(e.getMessage());
-//                mSUBSPSocketMsgTest.unsubscribe();
-//            }
-//
-//            @Override
-//            public void onNext(SocketMsgBean socketMsgBean) {
-//                ULog.i("onNext -->" + (null == socketMsgBean ? "socketMsgBean == null" : socketMsgBean.toString()));
-//            }
-//        });
+        mSUBSPSocketMsgTest = subscripMsg(SocketMsgBean.class, new Subscriber<SocketMsgBean>() {
+            @Override
+            public void onCompleted() {ULog.i("onCompleted"); }
+
+            @Override
+            public void onError(Throwable e) {
+                ULog.e(e.getMessage());
+                mSUBSPSocketMsgTest.unsubscribe();
+            }
+
+            @Override
+            public void onNext(SocketMsgBean socketMsgBean) {
+                ULog.i("onNext -->" + (null == socketMsgBean ? "socketMsgBean == null" : socketMsgBean.toString()));
+            }
+        });
 
         // --------- METHOD 2 ---------
-        mSUBSPSocketMsgTest = getGrablePushMsgObservable()
-                .map(new Func1<BaseBean, SocketMsgBean>() {
-                    @Override
-                    public SocketMsgBean call(BaseBean bean) {
-                        ULog.i(bean.toString());
-                        try {
-                            return new Gson().fromJson(bean.data, SocketMsgBean.class);
-                        } catch (Throwable e) {}
-                        return null;
-                    }
-                })
-                .filter(new Func1<SocketMsgBean, Boolean>() {
-                    @Override
-                    public Boolean call(SocketMsgBean socketMsgBean) {
-                        if (null != socketMsgBean && !mHashMap.containsKey(socketMsgBean.msgId)) {
-                            mHashMap.put(socketMsgBean.msgId, socketMsgBean.msgId);
-                            return true;
-                        }
-
-                        if (null != socketMsgBean) {
-                            ULog.i("filter [" + (null == socketMsgBean ? "null" : socketMsgBean.msgId) + "]");
-                        }
-
-                        return false;
-                    }
-                })
-                .subscribe(new Subscriber<SocketMsgBean>() {
-                    @Override
-                    public void onCompleted() {ULog.i("onCompleted"); }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        ULog.e(e.getMessage());
-                        mSUBSPSocketMsgTest.unsubscribe();
-                    }
-
-                    @Override
-                    public void onNext(SocketMsgBean socketMsgBean) {
-                        ULog.i("onNext -->" + (null == socketMsgBean ? "socketMsgBean == null" : socketMsgBean.toString()));
-                    }
-                });
+//        mSUBSPSocketMsgTest = getGrablePushMsgObservable()
+//                .map(new Func1<BaseBean, SocketMsgBean>() {
+//                    @Override
+//                    public SocketMsgBean call(BaseBean bean) {
+//                        ULog.i(bean.toString());
+//                        try {
+//                            return new Gson().fromJson(bean.data, SocketMsgBean.class);
+//                        } catch (Throwable e) {}
+//                        return null;
+//                    }
+//                })
+//                .filter(new Func1<SocketMsgBean, Boolean>() {
+//                    @Override
+//                    public Boolean call(SocketMsgBean socketMsgBean) {
+//                        if (null != socketMsgBean && !mHashMap.containsKey(socketMsgBean.msgId)) {
+//                            mHashMap.put(socketMsgBean.msgId, socketMsgBean.msgId);
+//                            return true;
+//                        }
+//
+//                        if (null != socketMsgBean) {
+//                            ULog.i("filter [" + (null == socketMsgBean ? "null" : socketMsgBean.msgId) + "]");
+//                        }
+//
+//                        return false;
+//                    }
+//                })
+//                .subscribe(new Subscriber<SocketMsgBean>() {
+//                    @Override
+//                    public void onCompleted() {ULog.i("onCompleted"); }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//                        ULog.e(e.getMessage());
+//                        mSUBSPSocketMsgTest.unsubscribe();
+//                    }
+//
+//                    @Override
+//                    public void onNext(SocketMsgBean socketMsgBean) {
+//                        ULog.i("onNext -->" + (null == socketMsgBean ? "socketMsgBean == null" : socketMsgBean.toString()));
+//                    }
+//                });
     }
 
 
