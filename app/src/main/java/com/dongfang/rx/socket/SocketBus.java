@@ -3,6 +3,7 @@ package com.dongfang.rx.socket;
 import com.dongfang.rx.entity.BaseBean;
 import com.dongfang.rx.entity.SocketMsgBean;
 import com.dongfang.rx.exception.SocketException;
+import com.dongfang.rx.net.HttpBus;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;
 
@@ -109,7 +110,7 @@ public final class SocketBus {
     /**
      * 合并socket推送（{@link Socket2Connect#getObservableReader()} ）和http轮询逻辑，
      * 建立能够得到 {@link BaseBean} 对象的Observable
-     * <p/>
+     * <p>
      * <p>1. 会过滤空数据; （当 {@code str == null || str.length() == 0 } , str由socket推送或http轮询获取）
      * <p>2. 会过滤 当 str 无法转换成 {@link BaseBean}时的消息
      *
@@ -149,25 +150,32 @@ public final class SocketBus {
     /** 轮询http 获取推送失败的信息 */
     private void initObsHttp() {
         if (mObsMsgHttp == null) {
-            mObsMsgHttp = Observable.just(1l)
-//                    .interval(4, TimeUnit.SECONDS)
-                    .map(new Func1<Long, Long>() {
-                        @Override
-                        public Long call(Long aLong) {
-                            return System.currentTimeMillis() % 10;
-                        }
-                    })
-                    .flatMap(new Func1<Long, Observable<String>>() {
-                        @Override
-                        public Observable<String> call(Long aLong) {
-                            mBaseBean.id = UI_ID + aLong;
-                            mHttpMegBean.msgId = mBaseBean.id;
-                            mBaseBean.data = new Gson().toJson(mHttpMegBean);
-                            return Observable.just(new Gson().toJson(mBaseBean)).delay(5, TimeUnit.SECONDS);
-                        }
-                    })
+//            mObsMsgHttp = Observable.just(1l)
+////                    .interval(4, TimeUnit.SECONDS)
+//                    .map(new Func1<Long, Long>() {
+//                        @Override
+//                        public Long call(Long aLong) {
+//                            return System.currentTimeMillis() % 10;
+//                        }
+//                    })
+//                    .flatMap(new Func1<Long, Observable<String>>() {
+//                        @Override
+//                        public Observable<String> call(Long aLong) {
+//                            mBaseBean.id = UI_ID + aLong;
+//                            mHttpMegBean.msgId = mBaseBean.id;
+//                            mBaseBean.data = new Gson().toJson(mHttpMegBean);
+//                            return Observable.just(new Gson().toJson(mBaseBean)).delay(5, TimeUnit.SECONDS);
+//                        }
+//                    })
+//                    .repeat()
+//                    .share();
+
+
+            mObsMsgHttp= HttpBus.getSingleton().getHttpService().getSocketMsg()
+                    .delay(5, TimeUnit.SECONDS)
                     .repeat()
                     .share();
+
         }
     }
 
