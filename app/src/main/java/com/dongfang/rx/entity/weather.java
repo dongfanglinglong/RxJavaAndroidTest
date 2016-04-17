@@ -5,7 +5,6 @@ import java.util.List;
 /**
  * Created by dongfang on 2016/4/16.
  *
- * @TEST
  */
 public class Weather {
 

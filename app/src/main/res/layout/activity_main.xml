@@ -50,4 +50,10 @@
         android:text="UNSUBSCRIBE"
         />
 
+    <Button
+        android:id="@+id/button_http_get"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="HTTP GET METHOD"
+        />
 </LinearLayout>

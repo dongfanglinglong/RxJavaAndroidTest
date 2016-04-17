@@ -17,7 +17,8 @@ public interface IHttpService {
     Observable<SocketMsgBean> getSocketMsg(@Query("city") String city,
                                            @Query("key") String key);
 
-    @Headers("Cache-Control: public, max-age=3600")
+//    @Headers("Cache-Control:max-age=3600")
+//    @Headers("Cache-Control:only-if-cached")
     @GET("/x3/weather")
     Observable<WeatherAPI> getWeather(@Query("city") String city,
                                       @Query("key") String key);

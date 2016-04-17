@@ -2,10 +2,12 @@ package com.dongfang.rx.net;
 
 import com.dongfang.rx.config.AppConfig;
 import com.dongfang.rx.config.Your;
+import com.dongfang.rx.utils.ULog;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Cache;
 import okhttp3.CacheControl;
 import okhttp3.Headers;
 import okhttp3.Interceptor;
@@ -26,30 +28,34 @@ public class HttpBus {
     private OkHttpClient mOkHttpClient;
     private IHttpService iHttpService;
 
-    private volatile static HttpBus sHttpClient;
+    private volatile static HttpBus sHttpBus;
 
-    private HttpBus() {init();}
+    private HttpBus() {
+        init();
+    }
+
 
     public static HttpBus getSingleton() {
-        if (sHttpClient == null) {
+        if (sHttpBus == null) {
             synchronized (HttpBus.class) {
-                if (sHttpClient == null) {
-                    sHttpClient = new HttpBus();
+                if (sHttpBus == null) {
+                    sHttpBus = new HttpBus();
                 }
             }
         }
-        return sHttpClient;
+        return sHttpBus;
     }
 
     private void init() {
-        HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-        mOkHttpClient = new OkHttpClient.Builder()
-                .addInterceptor(interceptor)
-                .addInterceptor(mCacheInterceptor)
+        mOkHttpClient = new OkHttpClient
+                .Builder()
+                .cache(new Cache(AppConfig.CACHE_DIR, 10 * 1024 * 1024)) // 10MB
+                .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                 .addInterceptor(REWRITE_CACHE_CONTROL_INTERCEPTOR)
                 .retryOnConnectionFailure(true)
                 .connectTimeout(15, TimeUnit.SECONDS)
+                // .writeTimeout(15, TimeUnit.SECONDS)
+                // .readTimeout(30, TimeUnit.SECONDS)
                 .addNetworkInterceptor(mTokenInterceptor)
                 .build();
 
@@ -62,6 +68,20 @@ public class HttpBus {
 
         iHttpService = retrofit.create(IHttpService.class);
     }
+
+
+    /** Dangerous interceptor that rewrites the server's cache-control header. */
+    private static final Interceptor REWRITE_CACHE_CONTROL_INTERCEPTOR = new Interceptor() {
+        @Override
+        public Response intercept(Interceptor.Chain chain) throws IOException {
+            Request request = chain.request();
+            if (request.url().toString().contains("heweather")){
+                request.newBuilder().addHeader("Cache-Control", "max-age=3600").build();
+            }
+            return chain.proceed(request);
+        }
+    };
+
 
     Interceptor mCacheInterceptor = new Interceptor() {
         @Override
@@ -76,7 +96,7 @@ public class HttpBus {
     Interceptor mTokenInterceptor = new Interceptor() {
         @Override
         public Response intercept(Chain chain) throws IOException {
-            System.out.println("----------mTokenInterceptor---------");
+            // System.out.println("----------mTokenInterceptor---------");
             Request originalRequest = chain.request();
 
 
@@ -89,20 +109,24 @@ public class HttpBus {
                     .header("Authorization", Your.sToken)
                     .build();
 
-            Headers headers = authorised.headers();
-            for (int i = 0, count = headers.size(); i < count; i++) {
-                System.out.println(headers.name(i) + ": " + headers.value(i));
-            }
+//            Headers headers = authorised.headers();
+//            for (int i = 0, count = headers.size(); i < count; i++) {
+//                System.out.println(headers.name(i) + ": " + headers.value(i));
+//            }
             return chain.proceed(authorised);
         }
 
         private boolean alreadyHasAuthorizationHeader(Request originalRequest) {
-            for (String s : originalRequest.headers().names()) {
-                System.out.println(s.toString());
-                if ("Authorization".equals(s)) {
+            String key;
+            for (int i = 0, l = originalRequest.headers().size(); i < l; i++) {
+                key = originalRequest.headers().name(i);
+                ULog.d(key + ":" + originalRequest.headers().value(i));
+                if ("Authorization".equals(key)) {
                     return true;
                 }
             }
+
+
             return false;
         }
     };

@@ -2,18 +2,26 @@ package com.dongfang.rx;
 
 import android.content.Context;
 import android.content.Intent;
+import android.net.http.HttpResponseCache;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import com.dongfang.rx.entity.SocketMsgBean;
+import com.dongfang.rx.entity.WeatherAPI;
 import com.dongfang.rx.net.HttpBus;
 import com.dongfang.rx.service.MyService;
 import com.dongfang.rx.socket.SocketBus;
 import com.dongfang.rx.utils.ULog;
 
+import java.io.File;
+import java.io.IOException;
+
+import okhttp3.Cache;
+import okhttp3.CacheControl;
 import rx.Observer;
 import rx.Subscriber;
 import rx.Subscription;
@@ -47,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         mSocketBus = SocketBus.getInstance();
-
 
         mBtnStart.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -104,6 +111,41 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        findViewById(R.id.button_http_get).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                HttpBus.getSingleton().getHttpService()
+                        .getWeather("shanghai", "18de4eb4b63d4cb08a2bab2629c1d4b3")
+                        .subscribeOn(Schedulers.io())
+                        .subscribe(new Observer<WeatherAPI>() {
+                            @Override
+                            public void onCompleted() {
+                                System.out.println("----------onCompleted-------");
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                                System.out.println("----------onError-------");
+                                e.printStackTrace();
+                            }
+
+                            @Override
+                            public void onNext(WeatherAPI s) {
+                                System.out.println(s.toString());
+                            }
+                        });
+            }
+        });
+
+
+        try {
+            File httpCacheDir = new File(getCacheDir(), "http");
+            long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
+            HttpResponseCache.install(httpCacheDir, httpCacheSize);
+        } catch (IOException e) {
+            ULog.e("HTTP response cache installation failed:" + e);
+        }
     }
 
 
@@ -119,25 +161,25 @@ public class MainActivity extends AppCompatActivity {
 
         ULog.i("onResume");
 
-        HttpBus.getSingleton().getHttpService().getSocketMsg("shanghai","18de4eb4b63d4cb08a2bab2629c1d4b3")
-                .subscribeOn(Schedulers.io())
-                .subscribe(new Observer<SocketMsgBean>() {
-                    @Override
-                    public void onCompleted() {
-
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-                        System.out.println(e.toString());
-                    }
-
-                    @Override
-                    public void onNext(SocketMsgBean socketMsgBean) {
-                        System.out.println("------------------------");
-                        System.out.println(socketMsgBean.toString());
-                    }
-                });
+//        HttpBus.getSingleton().getHttpService().getSocketMsg("shanghai", "18de4eb4b63d4cb08a2bab2629c1d4b3")
+//                .subscribeOn(Schedulers.io())
+//                .subscribe(new Observer<SocketMsgBean>() {
+//                    @Override
+//                    public void onCompleted() {
+//
+//                    }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//                        System.out.println(e.toString());
+//                    }
+//
+//                    @Override
+//                    public void onNext(SocketMsgBean socketMsgBean) {
+//                        System.out.println("------------------------");
+//                        System.out.println(socketMsgBean.toString());
+//                    }
+//                });
 
 
 //        Observable observable = Observable.just(1)
@@ -202,5 +244,14 @@ public class MainActivity extends AppCompatActivity {
 //                    }
 //                });
 
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        HttpResponseCache cache = HttpResponseCache.getInstalled();
+        if (cache != null) {
+            cache.flush();
+        }
     }
 }

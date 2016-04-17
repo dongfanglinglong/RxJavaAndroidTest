@@ -7,7 +7,7 @@ android {
     buildToolsVersion "23.0.3"
 
     defaultConfig {
-        applicationId "com.dongfang.rxjavaandroidtest"
+        applicationId "com.dongfang.rx"
         minSdkVersion 14
         targetSdkVersion 22
         versionCode 1

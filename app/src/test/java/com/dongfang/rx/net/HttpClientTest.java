@@ -1,10 +1,14 @@
 package com.dongfang.rx.net;
 
+import android.net.http.HttpResponseCache;
+import android.util.Log;
+
 import com.dongfang.rx.entity.WeatherAPI;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 
 import okhttp3.Request;
