@@ -1,7 +1,6 @@
 package com.dongfang.rx.net;
 
 import com.dongfang.rx.config.AppConfig;
-import com.dongfang.rx.config.Your;
 import com.dongfang.rx.utils.ULog;
 
 import java.io.IOException;
@@ -9,7 +8,6 @@ import java.util.concurrent.TimeUnit;
 
 import okhttp3.Cache;
 import okhttp3.CacheControl;
-import okhttp3.Headers;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -51,7 +49,7 @@ public class HttpBus {
                 .Builder()
                 .cache(new Cache(AppConfig.CACHE_DIR, 10 * 1024 * 1024)) // 10MB
                 .addInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-                 .addInterceptor(REWRITE_CACHE_CONTROL_INTERCEPTOR)
+                .addInterceptor(REWRITE_CACHE_CONTROL_INTERCEPTOR)
                 .retryOnConnectionFailure(true)
                 .connectTimeout(15, TimeUnit.SECONDS)
                 // .writeTimeout(15, TimeUnit.SECONDS)
@@ -75,7 +73,7 @@ public class HttpBus {
         @Override
         public Response intercept(Interceptor.Chain chain) throws IOException {
             Request request = chain.request();
-            if (request.url().toString().contains("heweather")){
+            if (request.url().toString().contains("heweather")) {
                 request.newBuilder().addHeader("Cache-Control", "max-age=3600").build();
             }
             return chain.proceed(request);
@@ -96,24 +94,26 @@ public class HttpBus {
     Interceptor mTokenInterceptor = new Interceptor() {
         @Override
         public Response intercept(Chain chain) throws IOException {
-            // System.out.println("----------mTokenInterceptor---------");
-            Request originalRequest = chain.request();
+            System.out.println("----------addNetworkInterceptor - mTokenInterceptor--------");
+            return chain.proceed(chain.request());
 
-
-            if (Your.sToken == null || alreadyHasAuthorizationHeader(originalRequest)) {
-                return chain.proceed(originalRequest);
-            }
-
-
-            Request authorised = originalRequest.newBuilder()
-                    .header("Authorization", Your.sToken)
-                    .build();
+//            Request originalRequest = chain.request();
+//
+//
+//            if (Your.sToken == null || alreadyHasAuthorizationHeader(originalRequest)) {
+//                return chain.proceed(originalRequest);
+//            }
+//
+//
+//            Request authorised = originalRequest.newBuilder()
+//                    .header("Authorization", Your.sToken)
+//                    .build();
 
 //            Headers headers = authorised.headers();
 //            for (int i = 0, count = headers.size(); i < count; i++) {
 //                System.out.println(headers.name(i) + ": " + headers.value(i));
 //            }
-            return chain.proceed(authorised);
+//            return chain.proceed(authorised);
         }
 
         private boolean alreadyHasAuthorizationHeader(Request originalRequest) {
