@@ -139,4 +139,15 @@ public class HttpBus {
     public OkHttpClient getOkHttpClient() {
         return mOkHttpClient;
     }
+
+
+    public okhttp3.Call getSocketMsgCall() {
+        return mOkHttpClient.newCall(new Request.Builder()
+                .url("https://api.heweather.com/x3/weather?city=shanghai&key=18de4eb4b63d4cb08a2bab2629c1d4b3")
+                .header("Cache-Control", "public, max-age=3600,max-stale=3600") //public, only-if-cached, max-stale=3600
+                .build()
+        );
+    }
+
+
 }

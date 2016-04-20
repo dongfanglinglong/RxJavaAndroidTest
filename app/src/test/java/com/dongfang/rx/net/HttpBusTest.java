@@ -68,7 +68,7 @@ public class HttpBusTest {
 
         Request request = new Request.Builder()
                 .url("https://api.heweather.com/x3/weather?city=shanghai&key=18de4eb4b63d4cb08a2bab2629c1d4b3")
-                .header("Cache-Control", "public, max-age=360,max-stale=30") //public, only-if-cached, max-stale=3600
+                .header("Cache-Control", "public, max-age=3600,max-stale=3600") //public, only-if-cached, max-stale=3600
                 .build();
         Response response = mClient.newCall(request).execute();
         if (!response.isSuccessful())

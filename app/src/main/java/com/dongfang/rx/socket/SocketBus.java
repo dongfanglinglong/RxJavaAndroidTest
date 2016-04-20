@@ -7,12 +7,15 @@ import com.dongfang.rx.net.HttpBus;
 import com.dongfang.rx.utils.ULog;
 import com.google.gson.Gson;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Call;
+import okhttp3.Response;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
@@ -114,11 +117,14 @@ public final class SocketBus {
      * <p>1. 会过滤空数据; （当 {@code str == null || str.length() == 0 } , str由socket推送或http轮询获取）
      * <p>2. 会过滤 当 str 无法转换成 {@link BaseBean}时的消息
      *
+     * @param needPoll 是否需要http轮询
      * @return Observable<BaseBean>
      */
-    private Observable<BaseBean> getGrablePushMsgObservable() {
-        mOBSPushMsg = Observable.merge(mSocket2Connect.getObservableReader().repeat(), mObsMsgHttp)
-                // mOBSPushMsg = mSocket2Connect.getObservableReader()
+    private Observable<BaseBean> getGrablePushMsgObservable(final boolean needPoll) {
+        Observable<String> observable = needPoll
+                ? Observable.merge(mSocket2Connect.getObservableReader().repeat(), mObsMsgHttp)
+                : mSocket2Connect.getObservableReader();
+        mOBSPushMsg = observable
                 .map(new Func1<String, BaseBean>() {
                     @Override
                     public BaseBean call(String str) {
@@ -144,44 +150,52 @@ public final class SocketBus {
                 })
                 .share();
 
+
         return mOBSPushMsg;
     }
 
     /** 轮询http 获取推送失败的信息 */
     private void initObsHttp() {
         if (mObsMsgHttp == null) {
-//            mObsMsgHttp = Observable.just(1l)
-////                    .interval(4, TimeUnit.SECONDS)
-//                    .map(new Func1<Long, Long>() {
-//                        @Override
-//                        public Long call(Long aLong) {
-//                            return System.currentTimeMillis() % 10;
-//                        }
-//                    })
-//                    .flatMap(new Func1<Long, Observable<String>>() {
-//                        @Override
-//                        public Observable<String> call(Long aLong) {
-//                            mBaseBean.id = UI_ID + aLong;
-//                            mHttpMegBean.msgId = mBaseBean.id;
-//                            mBaseBean.data = new Gson().toJson(mHttpMegBean);
-//                            return Observable.just(new Gson().toJson(mBaseBean)).delay(5, TimeUnit.SECONDS);
-//                        }
-//                    })
-//                    .repeat()
-//                    .share();
-
-
-            mObsMsgHttp= HttpBus.getSingleton().getHttpService().getSocketMsg()
+            mObsMsgHttp = Observable.just(HttpBus.getSingleton().getSocketMsgCall())
+                    .map(new Func1<Call, String>() {
+                        @Override
+                        public String call(Call call) {
+                            try {
+                                Response response = call.execute();
+                                if (response.isSuccessful()) {
+                                    return response.body().string();
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            return null;
+                        }
+                    })
+                    .filter(new Func1<String, Boolean>() {
+                        @Override
+                        public Boolean call(String s) {
+                            return null != s && s.length() > 0;
+                        }
+                    })
+                    .flatMap(new Func1<String, Observable<String>>() {
+                        @Override
+                        public Observable<String> call(String s) {
+                            mBaseBean.id = UI_ID + Math.round(Math.random() * 100);
+                            mHttpMegBean.msgId = mBaseBean.id;
+                            mBaseBean.data = new Gson().toJson(mHttpMegBean);
+                            return Observable.just(new Gson().toJson(mBaseBean)).delay(5, TimeUnit.SECONDS);
+                        }
+                    })
                     .delay(5, TimeUnit.SECONDS)
                     .repeat()
                     .share();
-
         }
     }
 
-    /** {@link SocketBus#subscripMsg(Class, Subscriber, Func1, Scheduler)} */
+    /** {@link SocketBus#subscripMsg(Class, Subscriber, boolean, Func1, Scheduler)} */
     public Subscription subscripMsg(final Class aClass, final Subscriber subscriber) {
-        return subscripMsg(aClass, subscriber, null, null);
+        return subscripMsg(aClass, subscriber, false, null, null);
     }
 
     /**
@@ -197,12 +211,14 @@ public final class SocketBus {
      *
      * @param aClass      最终需要转换成的对象
      * @param subscriber  注册到Observable的逻辑
+     * @param needPoll    是否需要轮询
      * @param filterFunc1 若需要过滤信息，实现该函数
      * @param observeOn   注册之后，在哪个线程上返回结果
      * @return {@code Subscription} 对象
      */
-    public Subscription subscripMsg(final Class aClass, final Subscriber subscriber, Func1 filterFunc1, Scheduler observeOn) {
-        Observable observable = getGrablePushMsgObservable()
+    public Subscription subscripMsg(final Class aClass, final Subscriber subscriber, final boolean needPoll,
+                                    final Func1 filterFunc1, final Scheduler observeOn) {
+        Observable observable = getGrablePushMsgObservable(needPoll)
                 .flatMap(new Func1<BaseBean, Observable<BaseBean>>() {
                     @Override
                     public Observable<BaseBean> call(final BaseBean bean) {
